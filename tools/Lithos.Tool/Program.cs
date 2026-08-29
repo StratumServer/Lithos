@@ -27,6 +27,9 @@ internal static class Program
                     RequireNoArguments(args[1..], "doctor");
                     await RunDoctorAsync(paths, manifest);
                     return 0;
+                case "smoke":
+                    await new SmokeCommand(paths).RunAsync(ParseSmoke(args[1..]));
+                    return 0;
                 default:
                     throw new ArgumentException($"Unknown command: {args[0]}");
             }
@@ -78,6 +81,51 @@ internal static class Program
         return new BootstrapOptions(serverArchive, clientArchive, repositoryCache, refresh, force);
     }
 
+    private static SmokeOptions ParseSmoke(string[] args)
+    {
+        string? dataPath = null;
+        var port = 0;
+        var patienceSeconds = 90;
+        var build = true;
+        var keepData = false;
+
+        for (var index = 0; index < args.Length; index++)
+        {
+            switch (args[index])
+            {
+                case "--data-path":
+                    dataPath = ReadValue(args, ref index);
+                    break;
+                case "--port":
+                    port = ReadInteger(args, ref index);
+                    break;
+                case "--patience":
+                    patienceSeconds = ReadInteger(args, ref index);
+                    break;
+                case "--no-build":
+                    build = false;
+                    break;
+                case "--keep-data":
+                    keepData = true;
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown smoke option: {args[index]}");
+            }
+        }
+
+        if (port is < 0 or > 65535)
+        {
+            throw new ArgumentOutOfRangeException(nameof(port), "Port must be between 0 and 65535.");
+        }
+
+        if (patienceSeconds is < 10 or > 600)
+        {
+            throw new ArgumentOutOfRangeException(nameof(patienceSeconds), "Patience must be between 10 and 600 seconds.");
+        }
+
+        return new SmokeOptions(dataPath, port, patienceSeconds, build, keepData);
+    }
+
     private static string ReadValue(string[] args, ref int index)
     {
         index++;
@@ -87,6 +135,18 @@ internal static class Program
         }
 
         return args[index];
+    }
+
+    private static int ReadInteger(string[] args, ref int index)
+    {
+        var option = args[index];
+        var value = ReadValue(args, ref index);
+        if (!int.TryParse(value, out var parsed))
+        {
+            throw new ArgumentException($"{option} requires an integer.");
+        }
+
+        return parsed;
     }
 
     private static void RequireNoArguments(string[] args, string command)
@@ -117,11 +177,19 @@ internal static class Program
         Console.WriteLine("  bootstrap   Reconstruct every project as a peer under src/");
         Console.WriteLine("  capture     Store src/ changes in patches/ and overlay/");
         Console.WriteLine("  doctor      Validate prerequisites and report repository state");
+        Console.WriteLine("  smoke       Build and boot a temporary headless server");
         Console.WriteLine();
         Console.WriteLine("Bootstrap options:");
         Console.WriteLine("  --server-archive PATH   Reuse an official server zip or tarball");
         Console.WriteLine("  --client-archive PATH   Reuse an official client zip or tarball for missing build references");
         Console.WriteLine("  --repository-cache DIR  Reuse checked-out upstream repositories at the pinned commits");
         Console.WriteLine("  --refresh --force       Rebuild generated baseline and src/ after capturing local work");
+        Console.WriteLine();
+        Console.WriteLine("Smoke options:");
+        Console.WriteLine("  --data-path DIR   Use an empty data directory and preserve it after the run");
+        Console.WriteLine("  --port NUMBER     Bind loopback to this port instead of an ephemeral port");
+        Console.WriteLine("  --patience SEC    Fail after this many seconds without server output");
+        Console.WriteLine("  --no-build        Reuse existing Release build output");
+        Console.WriteLine("  --keep-data       Preserve the generated data directory after a successful run");
     }
 }
