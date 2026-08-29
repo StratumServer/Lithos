@@ -1,0 +1,50 @@
+diff --git a/src/VintagestoryLib/Vintagestory.Server/ServerLogger.cs b/src/VintagestoryLib/Vintagestory.Server/ServerLogger.cs
+index ffae7e9..1fbb55f 100644
+--- a/src/VintagestoryLib/Vintagestory.Server/ServerLogger.cs
++++ b/src/VintagestoryLib/Vintagestory.Server/ServerLogger.cs
+@@ -1,16 +1,45 @@
++using System;
+ using System.IO;
+ using Vintagestory.API.Common;
+ using Vintagestory.API.Config;
+ 
+ namespace Vintagestory.Server;
+ 
+ public class ServerLogger : Logger
+ {
++	// Lithos: Keep a separate log for Lithos messages.
++	private readonly string lithosLogFile;
++
+ 	public ServerLogger(ServerProgramArgs args)
+ 		: base("Server", !args.Append, args.ArchiveLogFileCount, args.ArchiveLogFileMaxSizeMb)
+ 	{
++		lithosLogFile = Path.Combine(GamePaths.Logs, "server-lithos.log");
++		try
++		{
++			fileWriters.Add(lithosLogFile, new DisposableWriter(lithosLogFile, !args.Append));
++			LinesWritten.Add(lithosLogFile, 0u);
++			LogfileSplitNumbers.Add(lithosLogFile, 2);
++		}
++		catch (Exception e)
++		{
++			Error("Cannot open logfile {0} for writing ", lithosLogFile);
++			Error(e);
++		}
++	}
++
++	internal void LithosLog(EnumLogType logType, string message, params object[] args)
++	{
++		string mainLogFile = getLogFile(EnumLogType.Notification);
++		string primaryLogFile = getLogFile(logType);
++		string mainMessage = "[Lithos] " + message;
++		Log(logType, mainMessage, args);
++		if (primaryLogFile != mainLogFile)
++		{
++			LogToFile(mainLogFile, logType, mainMessage, args);
++		}
++		LogToFile(lithosLogFile, logType, message, args);
+ 	}
+ 
+ 	public override string getLogFile(EnumLogType logType)
+ 	{
+ 		switch (logType)

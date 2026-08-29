@@ -1,0 +1,20 @@
+diff --git a/src/VintagestoryLib/Vintagestory.Server/ServerProgram.cs b/src/VintagestoryLib/Vintagestory.Server/ServerProgram.cs
+index 64e6072..cd8dc49 100644
+--- a/src/VintagestoryLib/Vintagestory.Server/ServerProgram.cs
++++ b/src/VintagestoryLib/Vintagestory.Server/ServerProgram.cs
+@@ -93,11 +93,14 @@ public class ServerProgram
+ 	{
+ 		ServerMain.xPlatInterface = XPlatformInterfaces.GetInterface();
+ 		Signals[0] = PosixSignalRegistration.Create(PosixSignal.SIGTERM, OnExit);
+ 		Signals[1] = PosixSignalRegistration.Create(PosixSignal.SIGINT, OnExit);
+ 		Signals[2] = PosixSignalRegistration.Create(PosixSignal.SIGQUIT, OnExit);
+-		ServerMain.Logger = new ServerLogger(progArgs);
++		ServerLogger serverLogger = new ServerLogger(progArgs);
++		ServerMain.Logger = serverLogger;
++		// Lithos: Report the fork version beside the upstream game version during server startup.
++		serverLogger.LithosLog(EnumLogType.Notification, "Version: {0}", LithosBuildInfo.Version);
+ 		TyronThreadPool.Inst.Logger = ServerMain.Logger;
+ 		AppDomain.CurrentDomain.UnhandledException += HandleUnhandledException;
+ 		Lang.PreLoad(ServerMain.Logger, GamePaths.AssetsPath, ServerSettings.Language);
+ 		if (!CleanInstallCheck.IsCleanInstall())
+ 		{
