@@ -1,0 +1,51 @@
+diff --git a/src/VintagestoryApi/Common/Crafting/RecipeBase.cs b/src/VintagestoryApi/Common/Crafting/RecipeBase.cs
+index 21b4330..11b6d25 100644
+--- a/src/VintagestoryApi/Common/Crafting/RecipeBase.cs
++++ b/src/VintagestoryApi/Common/Crafting/RecipeBase.cs
+@@ -795,13 +795,26 @@ public abstract class RecipeBase : IRecipeBase, IConcreteCloneable<RecipeBase>
+         return MatchIngredientStacks(ingredientStacks, suppliedStacks);
+     }
+ 
+     protected virtual void MergeStacks(ItemSlot[] slots, List<ItemStack> stacks)
+     {
+-        foreach (ItemStack suppliedStack in slots.Select(slot => slot.Itemstack).OfType<ItemStack>())
++        // Lithos: Avoid LINQ iterator allocations during repeated shapeless recipe checks.
++        for (int index = 0; index < slots.Length; index++)
+         {
+-            ItemStack? similarStack = stacks.Find(stack => stack.Satisfies(suppliedStack));
++            ItemStack? suppliedStack = slots[index].Itemstack;
++            if (suppliedStack == null) continue;
++
++            ItemStack? similarStack = null;
++            for (int stackIndex = 0; stackIndex < stacks.Count; stackIndex++)
++            {
++                ItemStack stack = stacks[stackIndex];
++                if (!stack.Satisfies(suppliedStack)) continue;
++
++                similarStack = stack;
++                break;
++            }
++
+             if (similarStack != null)
+             {
+                 similarStack.StackSize += suppliedStack.StackSize;
+             }
+             else
+@@ -843,12 +856,16 @@ public abstract class RecipeBase : IRecipeBase, IConcreteCloneable<RecipeBase>
+         }
+     }
+ 
+     protected virtual bool MatchWildcardIngredients(List<ItemStack> suppliedStacks, IRecipeIngredient?[] ingredients)
+     {
+-        foreach (IRecipeIngredient ingredient in ingredients.OfType<IRecipeIngredient>().Where(ingredient => ingredient.MatchingType != EnumRecipeMatchType.Exact))
++        // Lithos: Avoid LINQ iterator allocations during repeated shapeless recipe checks.
++        for (int index = 0; index < ingredients.Length; index++)
+         {
++            IRecipeIngredient? ingredient = ingredients[index];
++            if (ingredient == null || ingredient.MatchingType == EnumRecipeMatchType.Exact) continue;
++
+             bool found = false;
+             int j = 0;
+             for (; !found && j < suppliedStacks.Count; j++)
+             {
+                 ItemStack inputStack = suppliedStacks[j];
