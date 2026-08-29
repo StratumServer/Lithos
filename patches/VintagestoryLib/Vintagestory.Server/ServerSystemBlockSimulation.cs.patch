@@ -1,0 +1,102 @@
+diff --git a/src/VintagestoryLib/Vintagestory.Server/ServerSystemBlockSimulation.cs b/src/VintagestoryLib/Vintagestory.Server/ServerSystemBlockSimulation.cs
+index 6b3cdd0..cb67160 100644
+--- a/src/VintagestoryLib/Vintagestory.Server/ServerSystemBlockSimulation.cs
++++ b/src/VintagestoryLib/Vintagestory.Server/ServerSystemBlockSimulation.cs
+@@ -52,10 +52,18 @@ public class ServerSystemBlockSimulation : ServerSystem
+ 
+ 	private BlockPos tmpPos = new BlockPos(0);
+ 
+ 	private FluidBlockPos tmpLiquidPos = new FluidBlockPos();
+ 
++	// Lithos start: Spread random ticks across stable chunk slices.
++	private const int LithosMaximumRandomTickSlices = 8;
++
++	private int lithosRandomTickSlice;
++
++	private int lithosRandomTickSliceCount;
++	// Lithos end.
++
+ 	public ServerSystemBlockSimulation(ServerMain server)
+ 		: base(server)
+ 	{
+ 		server.RegisterGameTickListener(UpdateEvery100ms, 100);
+ 		server.PacketHandlers[3] = HandleBlockPlaceOrBreak;
+@@ -650,13 +658,34 @@ public class ServerSystemBlockSimulation : ServerSystem
+ 		return false;
+ 	}
+ 
+ 	public override int GetUpdateInterval()
+ 	{
+-		return server.Config.BlockTickInterval;
++		// Lithos start: Run one random tick slice per update.
++		int blockTickInterval = server.Config.BlockTickInterval;
++		return blockTickInterval / lithosGetRandomTickSliceCount(blockTickInterval);
++		// Lithos end.
++	}
++
++	// Lithos start: Keep the configured interval exact while using up to eight slices.
++	private static int lithosGetRandomTickSliceCount(int blockTickInterval)
++	{
++		int maximumSliceCount = Math.Min(LithosMaximumRandomTickSlices, blockTickInterval);
++		for (int sliceCount = maximumSliceCount; sliceCount >= 2; sliceCount--)
++		{
++			if (blockTickInterval % sliceCount == 0) return sliceCount;
++		}
++
++		return 1;
+ 	}
+ 
++	private static int lithosGetRandomTickSlice(int chunkX, int chunkY, int chunkZ, int dimension, int sliceCount)
++	{
++		return GameMath.MurmurHash3Mod(chunkX, chunkY + dimension * 1024, chunkZ, sliceCount);
++	}
++	// Lithos end.
++
+ 	private void UpdateEvery100ms(float t1)
+ 	{
+ 		HandleDirtyAndUpdatedBlocks();
+ 		SendDirtyBlockEntities();
+ 	}
+@@ -820,12 +849,25 @@ public class ServerSystemBlockSimulation : ServerSystem
+ 
+ 	public override void OnSeparateThreadTick()
+ 	{
+ 		if (server.RunPhase != EnumServerRunPhase.RunGame)
+ 		{
++			// Lithos start: Restart the slice cycle when block simulation resumes.
++			lithosRandomTickSlice = 0;
++			// Lithos end.
+ 			return;
+ 		}
++		// Lithos start: Select one stable chunk slice for this pass.
++		int sliceCount = lithosGetRandomTickSliceCount(server.Config.BlockTickInterval);
++		if (sliceCount != lithosRandomTickSliceCount)
++		{
++			lithosRandomTickSlice = 0;
++			lithosRandomTickSliceCount = sliceCount;
++		}
++		int currentSlice = lithosRandomTickSlice;
++		lithosRandomTickSlice = (lithosRandomTickSlice + 1) % sliceCount;
++		// Lithos end.
+ 		chunksToBeTicked.Clear();
+ 		int blockTickChunkRange = server.Config.BlockTickChunkRange;
+ 		lock (clientIdsLock)
+ 		{
+ 			foreach (int clientId in clientIds)
+@@ -846,10 +888,16 @@ public class ServerSystemBlockSimulation : ServerSystem
+ 							int chunkZ = chunkPos.Z + k;
+ 							if (!server.WorldMap.IsValidChunkPos(chunkX, chunkY, chunkZ))
+ 							{
+ 								continue;
+ 							}
++							// Lithos start: Chunk coordinates keep slice membership independent of collection order.
++							if (sliceCount > 1 && lithosGetRandomTickSlice(chunkX, chunkY, chunkZ, chunkPos.Dimension, sliceCount) != currentSlice)
++							{
++								continue;
++							}
++							// Lithos end.
+ 							long num = server.WorldMap.ChunkIndex3D(chunkX, chunkY, chunkZ, chunkPos.Dimension);
+ 							ServerChunk serverChunk = server.WorldMap.GetServerChunk(num);
+ 							if (serverChunk != null)
+ 							{
+ 								chunksToBeTicked[num] = serverChunk;

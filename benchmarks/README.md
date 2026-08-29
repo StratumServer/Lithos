@@ -22,6 +22,7 @@ dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark craf
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark registry-code-parts --iterations 2000000 --samples 5
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark network-packet-broadcast --iterations 100000 --samples 5
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark pathfinding-candidates --iterations 2000000 --samples 5
+dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark random-tick-slices --iterations 2000000 --samples 5
 ```
 
 The suite has no external benchmark package. It measures the Release assemblies already produced by the repository build.
@@ -95,3 +96,21 @@ Patch: [packet broadcast recipient filtering](../patches/VintagestoryLib/Vintage
 | Checksum | 1,666,522,256 | 1,666,522,256 | unchanged |
 
 Patch: [A* candidate allocation](../patches/VSEssentials/Entity/Pathfinding/Astar/AStar.cs.patch)
+
+### 2026-08-29: random tick slices
+
+- Change: divide the configured random tick interval into chunk slices instead of processing the complete eligible chunk set in one burst.
+- Fixture: assign the 1,331 candidates in an 11 by 11 by 11 chunk neighborhood across a complete cycle while changing enumeration order between slices.
+- Configuration: Vintage Story API 1.22.7.0, .NET 10.0.11, Release, Windows x64, workstation GC.
+- Sampling: 2,000,000 chunk eligibility checks per sample, five samples, median result.
+- Scheduling: the default 300 ms interval uses six 50 ms slices. Each candidate is selected exactly once per cycle, and no fixture slice contains more than 250 candidates.
+- Compatibility: scheduling and random-number consumption order change within each cycle. Thread ownership, configured aggregate interval, player-overlap deduplication, and the attempt count for continuously eligible chunks remain unchanged.
+
+| Metric | Vanilla batch | Lithos slices |
+|---|---:|---:|
+| Nominal interval | 300 ms | 6 passes at 50 ms |
+| Candidate chunks per cycle | 1,331 | 1,331 |
+| Maximum candidates per fixture pass | 1,331 | 250 or fewer |
+| Slice eligibility overhead | Not applicable | 5.30 ns/check, 0 B/check |
+
+Patch: [random tick slicing](../patches/VintagestoryLib/Vintagestory.Server/ServerSystemBlockSimulation.cs.patch)
