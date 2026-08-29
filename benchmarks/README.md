@@ -24,6 +24,7 @@ dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark netw
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark pathfinding-candidates --iterations 2000000 --samples 5
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark random-tick-slices --iterations 2000000 --samples 5
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark entity-partition-rebuild-vanilla --benchmark entity-partition-rebuild-reuse --iterations 2000000 --samples 5
+dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark entity-packet-gather-vanilla --benchmark entity-packet-gather-reuse --iterations 2000000 --samples 5
 ```
 
 The suite has no external benchmark package. It measures the Release assemblies already produced by the repository build.
@@ -132,3 +133,20 @@ Patch: [random tick slicing](../patches/VintagestoryLib/Vintagestory.Server/Serv
 | Checksum | -1,585,616,704 | -1,585,616,704 | unchanged |
 
 Patch: [entity partition reuse](../patches/VSEssentials/Systems/EntityPartitioning.cs.patch)
+
+### 2026-08-29: entity packet gather buffers
+
+- Change: retain one set of position, animation, and tag gather lists per physics worker instead of allocating them for every send pass.
+- Fixture: cycle four worker indexes through passes containing 96 position packets, 24 animation packets, and six tag packets.
+- Configuration: Vintage Story API 1.22.7.0, .NET 10.0.11, Release, Windows x64, workstation GC.
+- Sampling: 2,000,000 gathered position updates per sample, five samples, median result.
+- Ownership: each buffer index follows the existing worker-indexed packet dictionaries. Main-thread use of index zero happens only after worker completion.
+- Compatibility: recipient selection, packet ordering, batch construction, send calls, and thread scheduling remain unchanged. Only private scratch-list identity and capacity differ.
+
+| Metric | Fresh lists | Worker-owned lists | Change |
+|---|---:|---:|---:|
+| Median time | 38.17 ns/update | 10.75 ns/update | 71.8% faster |
+| Allocation | 31.00 B/update | 0 B/update | 31.00 B/update removed |
+| Checksum | -1,330,102,592 | -1,330,102,592 | unchanged |
+
+Patch: [entity packet gather buffers](../patches/VintagestoryLib/Vintagestory.Server/PhysicsManager.cs.patch)

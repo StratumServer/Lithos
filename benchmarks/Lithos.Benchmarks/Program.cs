@@ -20,7 +20,9 @@ internal static class Program
         new PathfindingCandidateBenchmark(),
         new RandomTickSliceBenchmark(),
         new EntityPartitionBenchmark(false),
-        new EntityPartitionBenchmark(true)
+        new EntityPartitionBenchmark(true),
+        new EntityPacketGatherBenchmark(false),
+        new EntityPacketGatherBenchmark(true)
     ];
 
     public static int Main(string[] args)

@@ -1,0 +1,77 @@
+diff --git a/src/VintagestoryLib/Vintagestory.Server/PhysicsManager.cs b/src/VintagestoryLib/Vintagestory.Server/PhysicsManager.cs
+index 2c2605d..0f70df5 100644
+--- a/src/VintagestoryLib/Vintagestory.Server/PhysicsManager.cs
++++ b/src/VintagestoryLib/Vintagestory.Server/PhysicsManager.cs
+@@ -157,10 +157,18 @@ public class PhysicsManager : LoadBalancedTask
+ 
+ 	private ConcurrentDictionary<long, EntityTagPacket> entitiesTagPackets;
+ 
+ 	private FastMemoryStream[] entitiesUpdateReusableBuffers;
+ 
++	// Lithos start: Keep one set of packet gather buffers per physics worker.
++	private List<Packet_EntityPosition>[] lithosClientPositionUpdates;
++
++	private List<AnimationPacket>[] lithosClientAnimationUpdates;
++
++	private List<EntityTagPacket>[] lithosClientTagUpdates;
++	// Lithos end.
++
+ 	private double[] positions = new double[3];
+ 
+ 	private readonly EntityDespawnData outofRangeDespawnData = new EntityDespawnData
+ 	{
+ 		Reason = EnumDespawnReason.OutOfRange
+@@ -198,10 +206,15 @@ public class PhysicsManager : LoadBalancedTask
+ 		entitiesDebugUpdate = new Dictionary<long, Packet_EntityAttributes>[maxPhysicsThreads];
+ 		entitiesPositionPackets = new Dictionary<long, Packet_EntityPosition>[maxPhysicsThreads];
+ 		entitiesAnimPackets = new Dictionary<long, AnimationPacket>[maxPhysicsThreads];
+ 		entitiesTagPackets = new ConcurrentDictionary<long, EntityTagPacket>(maxPhysicsThreads, 32);
+ 		entitiesUpdateReusableBuffers = new FastMemoryStream[maxPhysicsThreads];
++		// Lithos start: Match gather-buffer ownership to the existing worker-indexed packet state.
++		lithosClientPositionUpdates = new List<Packet_EntityPosition>[maxPhysicsThreads];
++		lithosClientAnimationUpdates = new List<AnimationPacket>[maxPhysicsThreads];
++		lithosClientTagUpdates = new List<EntityTagPacket>[maxPhysicsThreads];
++		// Lithos end.
+ 		for (int i = 0; i < entitiesFullUpdate.Length; i++)
+ 		{
+ 			entitiesFullUpdate[i] = new Dictionary<long, Packet_EntityAttributes>();
+ 		}
+ 		for (int j = 0; j < entitiesPartialUpdate.Length; j++)
+@@ -221,10 +234,15 @@ public class PhysicsManager : LoadBalancedTask
+ 			entitiesAnimPackets[m] = new Dictionary<long, AnimationPacket>();
+ 		}
+ 		for (int n = 0; n < entitiesUpdateReusableBuffers.Length; n++)
+ 		{
+ 			entitiesUpdateReusableBuffers[n] = new FastMemoryStream();
++			// Lithos start: Each index is used by one physics worker at a time.
++			lithosClientPositionUpdates[n] = new List<Packet_EntityPosition>();
++			lithosClientAnimationUpdates[n] = new List<AnimationPacket>();
++			lithosClientTagUpdates[n] = new List<EntityTagPacket>();
++			// Lithos end.
+ 		}
+ 		server = sapi.World as ServerMain;
+ 		loadBalancer = new LoadBalancer(this, ServerMain.Logger);
+ 		loadBalancer.CreateDedicatedThreads(maxPhysicsThreads, "physicsManager", server.Serverthreads);
+ 		offthreadProcess = new PhysicsOffthreadTasks(this);
+@@ -781,13 +799,18 @@ public class PhysicsManager : LoadBalancedTask
+ 		return result;
+ 	}
+ 
+ 	public void SendPositionsAndAnimations(Dictionary<long, Packet_EntityPosition> entityPositionPackets, Dictionary<long, AnimationPacket> entityAnimPackets, int zeroBasedThreadNum, bool stateUpdateTick)
+ 	{
+-		List<Packet_EntityPosition> list = new List<Packet_EntityPosition>();
+-		List<AnimationPacket> list2 = new List<AnimationPacket>();
+-		List<EntityTagPacket> list3 = new List<EntityTagPacket>();
++		// Lithos start: Reuse the buffers owned by this worker index.
++		List<Packet_EntityPosition> list = lithosClientPositionUpdates[zeroBasedThreadNum];
++		List<AnimationPacket> list2 = lithosClientAnimationUpdates[zeroBasedThreadNum];
++		List<EntityTagPacket> list3 = lithosClientTagUpdates[zeroBasedThreadNum];
++		list.Clear();
++		list2.Clear();
++		list3.Clear();
++		// Lithos end.
+ 		ConcurrentDictionary<long, EntityTagPacket> concurrentDictionary = entitiesTagPackets;
+ 		foreach (ConnectedClient client in ClientList)
+ 		{
+ 			list.Clear();
+ 			list2.Clear();
