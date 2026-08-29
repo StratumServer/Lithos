@@ -23,6 +23,7 @@ dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark regi
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark network-packet-broadcast --iterations 100000 --samples 5
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark pathfinding-candidates --iterations 2000000 --samples 5
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark random-tick-slices --iterations 2000000 --samples 5
+dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark entity-partition-rebuild-vanilla --benchmark entity-partition-rebuild-reuse --iterations 2000000 --samples 5
 ```
 
 The suite has no external benchmark package. It measures the Release assemblies already produced by the repository build.
@@ -114,3 +115,20 @@ Patch: [A* candidate allocation](../patches/VSEssentials/Entity/Pathfinding/Asta
 | Slice eligibility overhead | Not applicable | 5.30 ns/check, 0 B/check |
 
 Patch: [random tick slicing](../patches/VintagestoryLib/Vintagestory.Server/ServerSystemBlockSimulation.cs.patch)
+
+### 2026-08-29: entity partition rebuild reuse
+
+- Change: retain recently used entity partitions and cell lists in a private cache keyed by chunk index.
+- Fixture: rebuild four overlapping layouts of 1,024 entities across 128 partitions per layout, including creature and inanimate cells.
+- Configuration: Vintage Story API 1.22.7.0, .NET 10.0.11, Release, Windows x64, workstation GC.
+- Sampling: 2,000,000 entity insertions per sample, five samples, median result.
+- Lifetime: inactive partitions expire after 300 rebuilds and are checked every 60 rebuilds.
+- Compatibility: the public dictionary instance, active keys, key order, cell membership, and entity order remain unchanged. Partition and list object identity and retained capacity differ because their storage is reused.
+
+| Metric | Vanilla rebuild | Lithos reuse | Change |
+|---|---:|---:|---:|
+| Median time | 65.57 ns/entity | 35.75 ns/entity | 45.5% faster |
+| Allocation | 49.77 B/entity | 0 B/entity | 49.77 B/entity removed |
+| Checksum | -1,585,616,704 | -1,585,616,704 | unchanged |
+
+Patch: [entity partition reuse](../patches/VSEssentials/Systems/EntityPartitioning.cs.patch)

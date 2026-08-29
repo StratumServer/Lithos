@@ -18,7 +18,9 @@ internal static class Program
         new RegistryCodePartBenchmark(),
         new PacketBroadcastBenchmark(),
         new PathfindingCandidateBenchmark(),
-        new RandomTickSliceBenchmark()
+        new RandomTickSliceBenchmark(),
+        new EntityPartitionBenchmark(false),
+        new EntityPartitionBenchmark(true)
     ];
 
     public static int Main(string[] args)

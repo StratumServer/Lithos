@@ -1,0 +1,139 @@
+diff --git a/src/VSEssentials/Systems/EntityPartitioning.cs b/src/VSEssentials/Systems/EntityPartitioning.cs
+index a0aa3b8..b0fb649 100644
+--- a/src/VSEssentials/Systems/EntityPartitioning.cs
++++ b/src/VSEssentials/Systems/EntityPartitioning.cs
+@@ -61,10 +61,21 @@ namespace Vintagestory.GameContent
+     public class EntityPartitioning : ModSystem, IEntityPartitioning
+     {
+         public const int partitionsLength = 4;
+         private const int gridSizeInBlocks = chunkSize / partitionsLength;
+ 
++        // Lithos start: Reuse recently inactive partitions without exposing them through Partitions.
++        private const int LithosPartitionCacheLifetimeTicks = 300;
++        private const int LithosPartitionCacheTrimIntervalTicks = 60;
++
++        private readonly Dictionary<long, LithosCachedPartition> lithosPartitionCache = new Dictionary<long, LithosCachedPartition>();
++        private readonly List<long> lithosPartitionCacheTrimKeys = new List<long>();
++        private Dictionary<long, EntityPartitionChunk> lithosPartitionCacheOwner;
++        private int lithosPartitionCacheGeneration;
++        private int lithosPartitionCacheTrimTicks;
++        // Lithos end.
++
+         ICoreAPI api;
+         ICoreClientAPI capi;
+         ICoreServerAPI sapi;
+ 
+         /// <summary>
+@@ -132,10 +143,26 @@ namespace Vintagestory.GameContent
+             long chunkMapSizeX = api.World.BlockAccessor.MapSizeX / chunkSize;
+             long chunkMapSizeZ = api.World.BlockAccessor.MapSizeZ / chunkSize;
+             double largestTouchDistance = 0;
+ 
+             var Partitions = this.Partitions;
++            // Lithos start: Clear active lists before moving their partitions into the private cache.
++            if (!ReferenceEquals(lithosPartitionCacheOwner, Partitions))
++            {
++                lithosPartitionCache.Clear();
++                lithosPartitionCacheTrimKeys.Clear();
++                lithosPartitionCacheOwner = Partitions;
++            }
++
++            int cacheGeneration = unchecked(++lithosPartitionCacheGeneration);
++            foreach (KeyValuePair<long, EntityPartitionChunk> entry in Partitions)
++            {
++                if (entry.Value.GetType() != typeof(EntityPartitionChunk)) continue;
++                lithosClearPartition(entry.Value);
++                lithosPartitionCache[entry.Key] = new LithosCachedPartition(entry.Value, cacheGeneration);
++            }
++            // Lithos end.
+             Partitions.Clear();
+ 
+             foreach (var entity in entities)
+             {
+                 if (entity.IsCreature)
+@@ -150,21 +177,84 @@ namespace Vintagestory.GameContent
+                 int gridIndex = (z / gridSizeInBlocks) % partitionsLength * partitionsLength + (x / gridSizeInBlocks) % partitionsLength;
+                 if (gridIndex < 0) continue;    // entities could be outside the map edge
+ 
+                 long nowInChunkIndex3d = MapUtil.Index3dL(x / chunkSize, (int)pos.InternalY / chunkSize, z / chunkSize, chunkMapSizeX, chunkMapSizeZ);
+ 
++            // Lithos start: Restore only the partition previously owned by this chunk.
+             if (!Partitions.TryGetValue(nowInChunkIndex3d, out EntityPartitionChunk partition))
+             {
+-                Partitions[nowInChunkIndex3d] = partition = new EntityPartitionChunk();
++                if (lithosPartitionCache.Remove(nowInChunkIndex3d, out LithosCachedPartition cachedPartition))
++                {
++                    partition = cachedPartition.Partition;
++                }
++                else
++                {
++                    partition = new EntityPartitionChunk();
++                }
++                Partitions[nowInChunkIndex3d] = partition;
+             }
++            // Lithos end.
+ 
+             var list = partition.Add(entity, gridIndex);
+             if (entity is EntityPlayer ep) ep.entityListForPartitioning = list;
+         }
+ 
+             this.LargestTouchDistance = largestTouchDistance;   // Only write to the field when we finished the operation, there could be 10k entities
++
++            // Lithos start: Release cached partitions after they have remained unused for about ten seconds.
++            lithosTrimPartitionCache(cacheGeneration);
++            // Lithos end.
++        }
++
++        // Lithos start: Retain list capacity while removing references to the previous tick's entities.
++        private static void lithosClearPartition(EntityPartitionChunk partition)
++        {
++            foreach (List<Entity> entities in partition.Entities)
++            {
++                entities?.Clear();
++            }
++
++            if (partition.InanimateEntities == null) return;
++            foreach (List<Entity> entities in partition.InanimateEntities)
++            {
++                entities?.Clear();
++            }
++        }
++
++        private void lithosTrimPartitionCache(int currentGeneration)
++        {
++            if (++lithosPartitionCacheTrimTicks < LithosPartitionCacheTrimIntervalTicks) return;
++            lithosPartitionCacheTrimTicks = 0;
++
++            List<long> trimKeys = lithosPartitionCacheTrimKeys;
++            trimKeys.Clear();
++            foreach (KeyValuePair<long, LithosCachedPartition> entry in lithosPartitionCache)
++            {
++                if (unchecked(currentGeneration - entry.Value.Generation) >= LithosPartitionCacheLifetimeTicks)
++                {
++                    trimKeys.Add(entry.Key);
++                }
++            }
++
++            foreach (long key in trimKeys)
++            {
++                lithosPartitionCache.Remove(key);
++            }
++        }
++
++        private readonly struct LithosCachedPartition
++        {
++            public readonly EntityPartitionChunk Partition;
++            public readonly int Generation;
++
++            public LithosCachedPartition(EntityPartitionChunk partition, int generation)
++            {
++                Partition = partition;
++                Generation = generation;
++            }
+         }
++        // Lithos end.
+ 
+ 
+         public void RePartitionPlayer(EntityPlayer entity)
+         {
+             entity.entityListForPartitioning?.Remove(entity);
