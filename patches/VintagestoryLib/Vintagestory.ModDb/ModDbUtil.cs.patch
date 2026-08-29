@@ -1,0 +1,17 @@
+diff --git a/src/VintagestoryLib/Vintagestory.ModDb/ModDbUtil.cs b/src/VintagestoryLib/Vintagestory.ModDb/ModDbUtil.cs
+index 00c2c32..27de2ea 100644
+--- a/src/VintagestoryLib/Vintagestory.ModDb/ModDbUtil.cs
++++ b/src/VintagestoryLib/Vintagestory.ModDb/ModDbUtil.cs
+@@ -180,11 +180,11 @@ public class ModDbUtil
+ 				string[] array = modId.Split('@', 2);
+ 				string text = array[0];
+ 				string text2 = ((array.Length > 1) ? array[1] : null);
+ 				foreach (KeyValuePair<string, ModInstallInformation> datum in result.Data)
+ 				{
+-					var (identifier, modInstallInformation2) = (KeyValuePair<string, ModInstallInformation>)(ref datum);
++					var (identifier, modInstallInformation2) = datum; // Lithos: Repair invalid decompiler output.
+ 					if (modInstallInformation2.ErrorCode != 0)
+ 					{
+ 						onProgressUpdate(identifier + ": " + modInstallInformation2.FormatErrorCode());
+ 					}
+ 					else if (!string.IsNullOrEmpty(modInstallInformation2.RetractionReason))

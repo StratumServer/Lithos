@@ -1,0 +1,17 @@
+diff --git a/src/VintagestoryLib/Vintagestory.Client/GuiScreenDownloadMods.cs b/src/VintagestoryLib/Vintagestory.Client/GuiScreenDownloadMods.cs
+index 1979963..27528fa 100644
+--- a/src/VintagestoryLib/Vintagestory.Client/GuiScreenDownloadMods.cs
++++ b/src/VintagestoryLib/Vintagestory.Client/GuiScreenDownloadMods.cs
+@@ -430,11 +430,11 @@ public class GuiScreenDownloadMods : GuiScreen
+ 			FocusedMouseCursor = ScreenManager.mainMenuComposer.MouseOverCursor;
+ 		}
+ 		ElementComposer.PostRender(dt);
+ 	}
+ 
+-	[GeneratedRegex("</?([\\w\\-]+)(?: .*?)?/?>")]
++	// Lithos: Reuse the decompiled regex body without running its source generator again.
+ 	[GeneratedCode("System.Text.RegularExpressions.Generator", "10.0.13.11305")]
+ 	private static Regex GetHtmlTagRegex()
+ 	{
+ 		return _003CRegexGenerator_g_003EF5E4070DDADCC3300604E0EF83A764699EE77ED70FD78E82B6CFF415D2F8056C5__GetHtmlTagRegex_0.Instance;
+ 	}

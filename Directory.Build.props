@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <FrameworkVersion>net10.0</FrameworkVersion>
+    <LangVersion>14.0</LangVersion>
+    <Deterministic>true</Deterministic>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);CS1591;CS1572;CS1573;CS1570;CS0649;CS0414;CS0169;CS0162;CS0168</NoWarn>
+    <LithosRepositoryRoot>$([MSBuild]::EnsureTrailingSlash('$(MSBuildThisFileDirectory)'))</LithosRepositoryRoot>
+    <VanillaInstallDir>$([MSBuild]::EnsureTrailingSlash('$(LithosRepositoryRoot).lithos/vanilla'))</VanillaInstallDir>
+  </PropertyGroup>
+</Project>

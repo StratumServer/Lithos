@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>VintagestoryLib</AssemblyName>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <TargetFramework>$(FrameworkVersion)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Cairo/Cairo.csproj" />
+    <ProjectReference Include="../VintagestoryApi/VintagestoryAPI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="protobuf-net" HintPath="$(VanillaInstallDir)Lib/protobuf-net.dll" />
+    <Reference Include="Newtonsoft.Json" HintPath="$(VanillaInstallDir)Lib/Newtonsoft.Json.dll" />
+    <Reference Include="CommandLine" HintPath="$(VanillaInstallDir)Lib/CommandLine.dll" />
+    <Reference Include="SkiaSharp" HintPath="$(VanillaInstallDir)Lib/SkiaSharp.dll" />
+    <Reference Include="Open.Nat" HintPath="$(VanillaInstallDir)Lib/Open.Nat.dll" />
+    <Reference Include="Mono.Nat" HintPath="$(VanillaInstallDir)Lib/Mono.Nat.dll" />
+    <Reference Include="Mono.Cecil" HintPath="$(VanillaInstallDir)Lib/Mono.Cecil.dll" />
+    <Reference Include="Microsoft.CodeAnalysis" HintPath="$(VanillaInstallDir)Lib/Microsoft.CodeAnalysis.dll" />
+    <Reference Include="Microsoft.CodeAnalysis.CSharp" HintPath="$(VanillaInstallDir)Lib/Microsoft.CodeAnalysis.CSharp.dll" />
+    <Reference Include="ICSharpCode.SharpZipLib" HintPath="$(VanillaInstallDir)Lib/ICSharpCode.SharpZipLib.dll" />
+    <Reference Include="Microsoft.Data.Sqlite" HintPath="$(VanillaInstallDir)Lib/Microsoft.Data.Sqlite.dll" />
+    <Reference Include="0Harmony" HintPath="$(VanillaInstallDir)Lib/0Harmony.dll" />
+    <Reference Include="OpenTK.Windowing.Desktop" HintPath="$(VanillaInstallDir)Lib/OpenTK.Windowing.Desktop.dll" />
+    <Reference Include="OpenTK.Audio.OpenAL" HintPath="$(VanillaInstallDir)Lib/OpenTK.Audio.OpenAL.dll" />
+    <Reference Include="OpenTK.Mathematics" HintPath="$(VanillaInstallDir)Lib/OpenTK.Mathematics.dll" />
+    <Reference Include="OpenTK.Windowing.Common" HintPath="$(VanillaInstallDir)Lib/OpenTK.Windowing.Common.dll" />
+    <Reference Include="OpenTK.Windowing.GraphicsLibraryFramework" HintPath="$(VanillaInstallDir)Lib/OpenTK.Windowing.GraphicsLibraryFramework.dll" />
+    <Reference Include="DnsClient" HintPath="$(VanillaInstallDir)Lib/DnsClient.dll" />
+    <Reference Include="OpenTK.Graphics" HintPath="$(VanillaInstallDir)Lib/OpenTK.Graphics.dll" />
+    <Reference Include="csvorbis" HintPath="$(VanillaInstallDir)Lib/csvorbis.dll" />
+    <Reference Include="csogg" HintPath="$(VanillaInstallDir)Lib/csogg.dll" />
+    <Reference Include="xplatforminterface" HintPath="$(VanillaInstallDir)Lib/xplatforminterface.dll" />
+  </ItemGroup>
+</Project>

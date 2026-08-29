@@ -1,0 +1,11 @@
+Lithos licensing notice
+
+The MIT License applies to original work authored for Lithos, including
+tooling, documentation, build files, original overlay files, and original
+changes expressed by patch files.
+
+It does not relicense Vintage Story or other third-party code. Vintage Story
+is a separate work owned by Anego Studios SIA and remains subject to its own
+terms. Material reconstructed under src/ and .lithos/ is not part of the
+repository. Open-source projects pinned by forks.json retain their respective
+licenses.

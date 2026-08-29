@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/Build/">
+    <Project Path="tools/Lithos.Tool/Lithos.Tool.csproj" />
+  </Folder>
+  <Folder Name="/Vanilla/">
+    <Project Path="src/Cairo/Cairo.csproj" />
+    <Project Path="src/VintagestoryApi/VintagestoryAPI.csproj" />
+    <Project Path="src/VintagestoryLib/VintagestoryLib.csproj" />
+    <Project Path="src/VintagestoryServer/VintagestoryServer.csproj" />
+  </Folder>
+  <Folder Name="/Vanilla Mods/">
+    <Project Path="src/VSCreativeMod/VSCreativeMod.csproj" />
+    <Project Path="src/VSEssentials/VSEssentialsMod.csproj" />
+    <Project Path="src/VSSurvivalMod/VSSurvivalMod.csproj" />
+  </Folder>
+</Solution>

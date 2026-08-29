@@ -1,0 +1,16 @@
+* text=auto
+
+# Patches must be identical on every platform.
+# Unified diff context markers put one required space before tab-indented source.
+patches/**/*.patch text eol=lf whitespace=-space-before-tab
+
+*.cs text eol=lf
+*.csproj text eol=lf
+*.md text eol=lf
+*.props text eol=lf
+*.slnx text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+LICENSE text eol=lf
+NOTICE text eol=lf

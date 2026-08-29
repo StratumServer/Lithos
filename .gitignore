@@ -1,0 +1,24 @@
+# Materialized source and reproducibility workspace
+/src/
+/.lithos/
+
+# Build and test output
+/artifacts/
+**/bin/
+**/obj/
+**/*.lscache
+**/*.user
+**/*.suo
+**/.vs/
+
+# Local reference material and machine-specific settings
+/.local/
+*.local.json
+*.local.props
+
+# Editors and operating systems
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
