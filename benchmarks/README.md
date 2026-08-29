@@ -20,6 +20,7 @@ dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --list
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --verify
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark crafting-shapeless-recipes --iterations 2000000 --samples 5
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark registry-code-parts --iterations 2000000 --samples 5
+dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark network-packet-broadcast --iterations 100000 --samples 5
 ```
 
 The suite has no external benchmark package. It measures the Release assemblies already produced by the repository build.
@@ -61,3 +62,19 @@ Patch: [shapeless recipe enumeration](../patches/VintagestoryApi/Common/Crafting
 | Checksum | 82,000,000 | 82,000,000 | unchanged |
 
 Patch: [registry code-part lookups](../patches/VintagestoryApi/Common/Registry/RegistryObject.cs.patch)
+
+### 2026-08-29: network-packet-broadcast
+
+- Change: scan the packet skip-player array directly instead of running LINQ for every client.
+- Fixture: check recipients for 64 playing clients with both an empty skip list and a five-entry skip list containing four players and one null entry.
+- Configuration: Vintage Story API 1.22.7.0, .NET 10.0.11, Release, Windows x64, workstation GC.
+- Sampling: 100,000 iterations per sample, 128 client checks per iteration, five samples, median result.
+- Compatibility: method bodies only; recipient masks are compared with the vanilla algorithm for null, empty, duplicate, missing, and null player entries, plus offline and queued client states.
+
+| Metric | Baseline | Lithos | Difference |
+|---|---:|---:|---:|
+| Time | 22.59 ns/op | 3.53 ns/op | 84.4% lower |
+| Allocation | 88 B/op | 0 B/op | 88 B/op removed |
+| Checksum | 12,400,000 | 12,400,000 | unchanged |
+
+Patch: [packet broadcast recipient filtering](../patches/VintagestoryLib/Vintagestory.Server/ServerMain.cs.patch)

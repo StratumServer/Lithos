@@ -1,0 +1,67 @@
+diff --git a/src/VintagestoryLib/Vintagestory.Server/ServerMain.cs b/src/VintagestoryLib/Vintagestory.Server/ServerMain.cs
+index fc2d86b..7e3f095 100644
+--- a/src/VintagestoryLib/Vintagestory.Server/ServerMain.cs
++++ b/src/VintagestoryLib/Vintagestory.Server/ServerMain.cs
+@@ -4238,15 +4238,16 @@ public sealed class ServerMain : GameMain, IServerWorldAccessor, IWorldAccessor,
+ 		{
+ 			recordInBenchmark(packet.Id, reusableBuffer.Length);
+ 		}
+ 	}
+ 
++	// Lithos start: Avoid LINQ allocations in packet broadcasts.
+ 	internal void BroadcastArbitraryPacket(byte[] data, params IServerPlayer[] skipPlayers)
+ 	{
+ 		foreach (ConnectedClient client in Clients.Values)
+ 		{
+-			if (client.State != EnumClientState.Offline && client.State != EnumClientState.Queued && (skipPlayers == null || !skipPlayers.Any((IServerPlayer plr) => plr?.ClientId == client.Id)))
++			if (client.State != EnumClientState.Offline && client.State != EnumClientState.Queued && !LithosShouldSkipClient(skipPlayers, client.Id))
+ 			{
+ 				SendPacket(client.Player, data);
+ 			}
+ 		}
+ 	}
+@@ -4256,11 +4257,11 @@ public sealed class ServerMain : GameMain, IServerWorldAccessor, IWorldAccessor,
+ 		Serialize_(packet);
+ 		byte[] array = null;
+ 		bool compressed = false;
+ 		foreach (ConnectedClient client in Clients.Values)
+ 		{
+-			if (client.State != EnumClientState.Offline && client.State != EnumClientState.Queued && (skipPlayers == null || !skipPlayers.Any((IServerPlayer plr) => plr?.ClientId == client.Id)))
++			if (client.State != EnumClientState.Offline && client.State != EnumClientState.Queued && !LithosShouldSkipClient(skipPlayers, client.Id))
+ 			{
+ 				if (array == null)
+ 				{
+ 					array = client.Socket.PreparePacketForSending(reusableBuffer, Config.CompressPackets, out compressed);
+ 				}
+@@ -4275,17 +4276,30 @@ public sealed class ServerMain : GameMain, IServerWorldAccessor, IWorldAccessor,
+ 
+ 	internal void BroadcastArbitraryUdpPacket(Packet_UdpPacket data, params IServerPlayer[] skipPlayers)
+ 	{
+ 		foreach (ConnectedClient client in Clients.Values)
+ 		{
+-			if (client.State != EnumClientState.Offline && client.State != EnumClientState.Queued && (skipPlayers == null || skipPlayers.All((IServerPlayer plr) => plr?.ClientId != client.Id)))
++			if (client.State != EnumClientState.Offline && client.State != EnumClientState.Queued && !LithosShouldSkipClient(skipPlayers, client.Id))
+ 			{
+ 				SendPacket(client, data);
+ 			}
+ 		}
+ 	}
+ 
++	private static bool LithosShouldSkipClient(IServerPlayer[] skipPlayers, int clientId)
++	{
++		if (skipPlayers == null) return false;
++
++		for (int i = 0; i < skipPlayers.Length; i++)
++		{
++			if (skipPlayers[i]?.ClientId == clientId) return true;
++		}
++
++		return false;
++	}
++	// Lithos end.
++
+ 	private void recordInBenchmark(int packetId, int dataLength)
+ 	{
+ 		if (packetBenchmark.ContainsKey(packetId))
+ 		{
+ 			packetBenchmark[packetId]++;

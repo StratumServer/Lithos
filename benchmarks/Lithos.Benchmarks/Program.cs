@@ -15,7 +15,8 @@ internal static class Program
     private static readonly IBenchmarkCase[] BenchmarkCases =
     [
         new ShapelessRecipeBenchmark(),
-        new RegistryCodePartBenchmark()
+        new RegistryCodePartBenchmark(),
+        new PacketBroadcastBenchmark()
     ];
 
     public static int Main(string[] args)
