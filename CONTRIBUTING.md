@@ -138,6 +138,16 @@ Compilation and smoke testing are only the first gates. Test the vanilla behavio
 
 Performance changes need a repeatable before and after measurement. Record the game version, build configuration, world or fixture, mods, player or bot count, duration, metric, and both results. Do not keep an invasive change based only on a theoretical gain.
 
+The benchmark suite uses the existing Release server output and requires no additional benchmark packages:
+
+```text
+dotnet build Lithos.slnx -c Release
+dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --verify
+dotnet run --project benchmarks/Lithos.Benchmarks -c Release
+```
+
+Run the same command and workload against the vanilla baseline and then do the proposed change. You should use an odd sample count so the fixture can report an unambiguous median. See the [benchmark catalog](benchmarks/README.md) for targeted commands and the result history.
+
 ## Rebase a contribution branch
 
 Rebase onto current upstream `main` before requesting final review:
