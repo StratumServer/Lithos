@@ -19,6 +19,7 @@ Useful options:
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --list
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --verify
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark crafting-shapeless-recipes --iterations 2000000 --samples 5
+dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark registry-code-parts --iterations 2000000 --samples 5
 ```
 
 The suite has no external benchmark package. It measures the Release assemblies already produced by the repository build.
@@ -44,3 +45,19 @@ Add an `IBenchmarkCase` implementation with a stable name, a representative work
 | Checksum | 2,000,000 | 2,000,000 | unchanged |
 
 Patch: [shapeless recipe enumeration](../patches/VintagestoryApi/Common/Crafting/RecipeBase.cs.patch)
+
+### 2026-08-29: registry-code-parts
+
+- Change: scan asset-code paths directly in `RegistryObject.FirstCodePart` and `RegistryObject.LastCodePart` instead of splitting every segment.
+- Fixture: perform eight first- and last-segment lookups per iteration across multi-part, empty-part, and single-part paths.
+- Configuration: Vintage Story API 1.22.7.0, .NET 10.0.11, Release, Windows x64, workstation GC.
+- Sampling: 2,000,000 iterations per sample, eight operations per iteration, five samples, median result.
+- Compatibility: method bodies only; results and exception types are compared with the vanilla algorithm across null codes, empty segments, boundary positions, and extreme integer positions.
+
+| Metric | Baseline | Lithos | Difference |
+|---|---:|---:|---:|
+| Time | 78.51 ns/op | 11.33 ns/op | 85.6% lower |
+| Allocation | 166 B/op | 27 B/op | 139 B/op removed |
+| Checksum | 82,000,000 | 82,000,000 | unchanged |
+
+Patch: [registry code-part lookups](../patches/VintagestoryApi/Common/Registry/RegistryObject.cs.patch)

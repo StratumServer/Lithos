@@ -1,0 +1,85 @@
+diff --git a/src/VintagestoryApi/Common/Registry/RegistryObject.cs b/src/VintagestoryApi/Common/Registry/RegistryObject.cs
+index 505a304..c2b6932 100644
+--- a/src/VintagestoryApi/Common/Registry/RegistryObject.cs
++++ b/src/VintagestoryApi/Common/Registry/RegistryObject.cs
+@@ -211,28 +211,74 @@ namespace Vintagestory.API.Common
+         /// <param name="posFromRight"></param>
+         /// <returns></returns>
+         public string LastCodePart(int posFromRight = 0)
+         {
+             if (Code == null) return null;
+-            if (posFromRight == 0 && !Code.Path.Contains('-')) return Code.Path;
+ 
+-            string[] parts = Code.Path.Split('-');
+-            return parts.Length - 1 - posFromRight >= 0 ? parts[parts.Length - 1 - posFromRight] : null;
++            // Lithos: Scan code paths directly to avoid Split array and unused segment allocations.
++            string path = Code.Path;
++            int pathLength = path.Length;
++            if (posFromRight < 0)
++            {
++                // Preserve vanilla's invalid-index exception and overflow behavior.
++                string[] parts = path.Split('-');
++                int partIndex = parts.Length - 1 - posFromRight;
++                return partIndex >= 0 ? parts[partIndex] : null;
++            }
++
++            int rightBoundary = pathLength;
++            for (int index = pathLength - 1; index >= 0; index--)
++            {
++                if (path[index] != '-') continue;
++
++                if (posFromRight == 0)
++                {
++                    return path.Substring(index + 1, rightBoundary - index - 1);
++                }
++
++                posFromRight--;
++                rightBoundary = index;
++            }
++
++            if (posFromRight != 0) return null;
++            return rightBoundary == pathLength ? path : path.Substring(0, rightBoundary);
+         }
+ 
+         /// <summary>
+         /// Returns the n-th code part. If the code contains no dash ('-') the whole code is returned. Returns null if posFromLeft is too high.
+         /// </summary>
+         /// <param name="posFromLeft"></param>
+         /// <returns></returns>
+         public string FirstCodePart(int posFromLeft = 0)
+         {
+             if (Code == null) return null;
+-            if (posFromLeft == 0 && !Code.Path.Contains('-')) return Code.Path;
+ 
+-            string[] parts = Code.Path.Split('-');
+-            return posFromLeft <= parts.Length - 1 ? parts[posFromLeft] : null;
++            // Lithos: Scan code paths directly to avoid Split array and unused segment allocations.
++            string path = Code.Path;
++            int pathLength = path.Length;
++            if (posFromLeft < 0)
++            {
++                // Preserve vanilla's invalid-index exception behavior.
++                return path.Split('-')[posFromLeft];
++            }
++
++            int leftBoundary = 0;
++            for (int index = 0; index < pathLength; index++)
++            {
++                if (path[index] != '-') continue;
++
++                if (posFromLeft == 0)
++                {
++                    return path.Substring(leftBoundary, index - leftBoundary);
++                }
++
++                posFromLeft--;
++                leftBoundary = index + 1;
++            }
++
++            if (posFromLeft != 0) return null;
++            return leftBoundary == 0 ? path : path.Substring(leftBoundary);
+         }
+ 
+         /// <summary>
+         /// Returns true if any given wildcard matches the blocks/items code. E.g. water-* will match all water blocks
+         /// </summary>

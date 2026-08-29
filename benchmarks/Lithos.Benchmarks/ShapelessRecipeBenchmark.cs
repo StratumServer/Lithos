@@ -26,6 +26,8 @@ internal sealed class ShapelessRecipeBenchmark : IBenchmarkCase
 
     public string Description => "Merges an empty 3x3 crafting grid and filters exact recipe ingredients.";
 
+    public int OperationsPerIteration => 1;
+
     public void Validate()
     {
         var firstItem = new BenchmarkItem { ItemId = 1 };

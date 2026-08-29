@@ -14,7 +14,8 @@ internal static class Program
 
     private static readonly IBenchmarkCase[] BenchmarkCases =
     [
-        new ShapelessRecipeBenchmark()
+        new ShapelessRecipeBenchmark(),
+        new RegistryCodePartBenchmark()
     ];
 
     public static int Main(string[] args)
@@ -78,6 +79,7 @@ internal static class Program
 
         Array.Sort(samples, static (left, right) => left.Elapsed.CompareTo(right.Elapsed));
         BenchmarkSample median = samples[samples.Length / 2];
+        long operationCount = (long)options.Iterations * benchmark.OperationsPerIteration;
 
         Console.WriteLine($"Benchmark: {benchmark.Name}");
         Console.WriteLine($"Description: {benchmark.Description}");
@@ -89,11 +91,12 @@ internal static class Program
         Console.WriteLine($"GC mode: {(GCSettings.IsServerGC ? "server" : "workstation")}");
         Console.WriteLine($"Processor count: {Environment.ProcessorCount}");
         Console.WriteLine($"Iterations per sample: {options.Iterations.ToString("N0", CultureInfo.InvariantCulture)}");
+        Console.WriteLine($"Operations per iteration: {benchmark.OperationsPerIteration}");
         Console.WriteLine($"Samples: {options.Samples}");
         Console.WriteLine(FormattableString.Invariant(
-            $"Median time: {median.Elapsed.TotalMilliseconds:F2} ms ({median.Elapsed.TotalNanoseconds / options.Iterations:F2} ns/op)"));
+            $"Median time: {median.Elapsed.TotalMilliseconds:F2} ms ({median.Elapsed.TotalNanoseconds / operationCount:F2} ns/op)"));
         Console.WriteLine(FormattableString.Invariant(
-            $"Allocated: {median.AllocatedBytes:N0} bytes ({(double)median.AllocatedBytes / options.Iterations:F2} B/op)"));
+            $"Allocated: {median.AllocatedBytes:N0} bytes ({(double)median.AllocatedBytes / operationCount:F2} B/op)"));
         Console.WriteLine($"Checksum: {median.Checksum}");
         Console.WriteLine();
     }

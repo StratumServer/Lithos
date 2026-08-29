@@ -6,6 +6,8 @@ internal interface IBenchmarkCase
 
     string Description { get; }
 
+    int OperationsPerIteration { get; }
+
     void Validate();
 
     int Run(int iterations);
