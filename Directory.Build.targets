@@ -1,0 +1,27 @@
+<Project>
+  <Target Name="ValidateLithosVersion" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <_LithosVersionValid>$([System.Text.RegularExpressions.Regex]::IsMatch('$(LithosVersion)', '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'))</_LithosVersionValid>
+    </PropertyGroup>
+    <Error Condition="'$(LithosVersion)' == ''"
+           Text="LithosVersion must be set in version.props." />
+    <Error Condition="'$(LithosVersion)' != '' and '$(_LithosVersionValid)' != 'True'"
+           Text="LithosVersion must be a valid semantic version." />
+  </Target>
+
+  <Target Name="GenerateLithosBuildInfo"
+          BeforeTargets="CoreCompile"
+          Condition="'$(AssemblyName)' == 'VintagestoryLib'">
+    <PropertyGroup>
+      <_LithosBuildInfoFile>$(IntermediateOutputPath)LithosBuildInfo.g.cs</_LithosBuildInfoFile>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_LithosBuildInfoFile)"
+                      Lines="namespace Vintagestory { internal static class LithosBuildInfo { internal const string Version = &quot;$(LithosVersion)&quot;%3B } }"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true"
+                      Encoding="UTF-8" />
+    <ItemGroup>
+      <Compile Include="$(_LithosBuildInfoFile)" />
+    </ItemGroup>
+  </Target>
+</Project>

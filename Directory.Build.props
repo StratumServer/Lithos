@@ -1,4 +1,6 @@
 <Project>
+  <Import Project="$(MSBuildThisFileDirectory)version.props" />
+
   <PropertyGroup>
     <FrameworkVersion>net10.0</FrameworkVersion>
     <LangVersion>14.0</LangVersion>
