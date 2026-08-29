@@ -1,0 +1,62 @@
+diff --git a/src/VSEssentials/Entity/Pathfinding/Astar/AStar.cs b/src/VSEssentials/Entity/Pathfinding/Astar/AStar.cs
+index c3fe425..5b3d10b 100644
+--- a/src/VSEssentials/Entity/Pathfinding/Astar/AStar.cs
++++ b/src/VSEssentials/Entity/Pathfinding/Astar/AStar.cs
+@@ -21,10 +21,13 @@ namespace Vintagestory.Essentials
+         public double centerOffsetZ = 0.5;
+         public EnumAICreatureType creatureType;
+ 
+         protected CollisionTester collTester;
+ 
++        // Lithos: Scratch state for path candidates.
++        private readonly PathNode lithosNeighbourNode = new PathNode(new BlockPos(API.Config.Dimensions.WillSetLater));
++
+         public AStar(ICoreServerAPI api)
+         {
+             this.api = api;
+             collTester = new CollisionTester();
+             blockAccess = api.World.GetCachingBlockAccessor(true, true);
+@@ -112,11 +115,21 @@ namespace Vintagestory.Essentials
+ 
+                 for (int i = 0; i < Cardinal.ALL.Length; i++)
+                 {
+                     Cardinal card = Cardinal.ALL[i];
+ 
+-                    PathNode neighbourNode = new PathNode(nearestNode, card);
++                    // Lithos start: Reuse candidate state.
++                    PathNode neighbourNode = lithosNeighbourNode;
++                    neighbourNode.Set(nearestNode.X + card.Normali.X, nearestNode.Y + card.Normali.Y, nearestNode.Z + card.Normali.Z);
++                    neighbourNode.dimension = nearestNode.dimension;
++                    neighbourNode.gCost = 0;
++                    neighbourNode.hCost = 0;
++                    neighbourNode.HeapIndex = 0;
++                    neighbourNode.Parent = null;
++                    neighbourNode.pathLength = 0;
++                    neighbourNode.Action = EnumTraverseAction.Walk;
++                    // Lithos end.
+ 
+                     float extraCost = 0;
+                     PathNode existingNeighbourNode = openSet.TryFindValue(neighbourNode);
+                     if (!(existingNeighbourNode is null))   // we have to do a null check using "is null" due to foibles in PathNode.Equals()
+                     {
+@@ -132,14 +145,17 @@ namespace Vintagestory.Essentials
+                     }
+                     else if (!closedSet.Contains(neighbourNode))
+                     {
+                         if (traversable(neighbourNode, stepHeight, maxFallHeight, entityCollBox, card, ref extraCost))
+                         {
+-                            UpdateNode(nearestNode, neighbourNode, extraCost);
++                            // Lithos start: Keep accepted nodes independently owned.
++                            PathNode acceptedNeighbourNode = new PathNode(neighbourNode);
++                            UpdateNode(nearestNode, acceptedNeighbourNode, extraCost);
+                             
+-                            neighbourNode.hCost = modeMinFleeDistance > 0 ? 1 + modeMinFleeDistance - neighbourNode.distanceTo(targetNode) : neighbourNode.distanceTo(targetNode);
+-                            openSet.Add(neighbourNode);
++                            acceptedNeighbourNode.hCost = modeMinFleeDistance > 0 ? 1 + modeMinFleeDistance - acceptedNeighbourNode.distanceTo(targetNode) : acceptedNeighbourNode.distanceTo(targetNode);
++                            openSet.Add(acceptedNeighbourNode);
++                            // Lithos end.
+                         }
+                     }
+                 }
+             }
+ 

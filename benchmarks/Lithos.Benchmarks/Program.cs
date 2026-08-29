@@ -16,7 +16,8 @@ internal static class Program
     [
         new ShapelessRecipeBenchmark(),
         new RegistryCodePartBenchmark(),
-        new PacketBroadcastBenchmark()
+        new PacketBroadcastBenchmark(),
+        new PathfindingCandidateBenchmark()
     ];
 
     public static int Main(string[] args)

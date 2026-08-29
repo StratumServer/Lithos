@@ -21,6 +21,7 @@ dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --verify
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark crafting-shapeless-recipes --iterations 2000000 --samples 5
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark registry-code-parts --iterations 2000000 --samples 5
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark network-packet-broadcast --iterations 100000 --samples 5
+dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark pathfinding-candidates --iterations 2000000 --samples 5
 ```
 
 The suite has no external benchmark package. It measures the Release assemblies already produced by the repository build.
@@ -78,3 +79,19 @@ Patch: [registry code-part lookups](../patches/VintagestoryApi/Common/Registry/R
 | Checksum | 12,400,000 | 12,400,000 | unchanged |
 
 Patch: [packet broadcast recipient filtering](../patches/VintagestoryLib/Vintagestory.Server/ServerMain.cs.patch)
+
+### 2026-08-29: pathfinding candidates
+
+- Change: reuse one scratch `PathNode` for A* candidates and allocate an independently owned node only when the candidate enters the open set.
+- Fixture: cycle through eight directions for 256 expanded nodes, retaining one candidate in four. This isolates candidate construction and does not measure collision checks or a complete path search.
+- Configuration: Vintage Story API 1.22.7.0, .NET 10.0.11, Release, Windows x64, workstation GC.
+- Sampling: 2,000,000 candidates per sample, five samples, median result.
+- Compatibility: method body only; accepted coordinates, dimensions, object identity, and lifetime after scratch reuse are verified against the vanilla construction path.
+
+| Metric | Baseline | Lithos | Difference |
+|---|---:|---:|---:|
+| Time | 11.35 ns/op | 5.41 ns/op | 52.3% lower |
+| Allocation | 64 B/op | 16 B/op | 48 B/op removed |
+| Checksum | 1,666,522,256 | 1,666,522,256 | unchanged |
+
+Patch: [A* candidate allocation](../patches/VSEssentials/Entity/Pathfinding/Astar/AStar.cs.patch)
