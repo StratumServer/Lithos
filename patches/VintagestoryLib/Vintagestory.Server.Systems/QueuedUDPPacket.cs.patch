@@ -1,0 +1,29 @@
+diff --git a/src/VintagestoryLib/Vintagestory.Server.Systems/QueuedUDPPacket.cs b/src/VintagestoryLib/Vintagestory.Server.Systems/QueuedUDPPacket.cs
+index e57a1b0..5831826 100644
+--- a/src/VintagestoryLib/Vintagestory.Server.Systems/QueuedUDPPacket.cs
++++ b/src/VintagestoryLib/Vintagestory.Server.Systems/QueuedUDPPacket.cs
+@@ -8,12 +8,24 @@ internal class QueuedUDPPacket
+ 
+ 	internal ConnectedClient client;
+ 
+ 	internal long creationTime;
+ 
++	// Lithos start: Track queue-owned bulk position storage.
++	internal bool lithosPooledBulkPosition;
++	// Lithos end.
++
+ 	public QueuedUDPPacket(ConnectedClient client, Packet_UdpPacket udpPacket)
+ 	{
+ 		packet = udpPacket;
+ 		this.client = client;
+ 		creationTime = Environment.TickCount;
+ 	}
++
++	// Lithos start: Mark packets whose buffers must be returned after sending.
++	internal QueuedUDPPacket(ConnectedClient client, Packet_UdpPacket udpPacket, bool lithosPooledBulkPosition)
++		: this(client, udpPacket)
++	{
++		this.lithosPooledBulkPosition = lithosPooledBulkPosition;
++	}
++	// Lithos end.
+ }

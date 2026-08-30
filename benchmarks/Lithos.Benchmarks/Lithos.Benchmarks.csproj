@@ -16,6 +16,10 @@
       <HintPath>$(BenchmarkInputDir)VintagestoryAPI.dll</HintPath>
       <Private>true</Private>
     </Reference>
+    <Reference Include="VintagestoryLib">
+      <HintPath>$(BenchmarkInputDir)VintagestoryLib.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
     <Reference Include="VSEssentials">
       <HintPath>$(BenchmarkModInputDir)VSEssentials.dll</HintPath>
       <Private>true</Private>
@@ -32,6 +36,8 @@
 
   <Target Name="CheckBenchmarkInput" BeforeTargets="ResolveReferences">
     <Error Condition="!Exists('$(BenchmarkInputDir)VintagestoryAPI.dll')"
+           Text="Build Lithos.slnx in Release before running this benchmark." />
+    <Error Condition="!Exists('$(BenchmarkInputDir)VintagestoryLib.dll')"
            Text="Build Lithos.slnx in Release before running this benchmark." />
     <Error Condition="!Exists('$(BenchmarkModInputDir)VSEssentials.dll')"
            Text="Build Lithos.slnx in Release before running this benchmark." />

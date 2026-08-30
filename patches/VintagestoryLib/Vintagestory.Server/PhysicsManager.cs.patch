@@ -1,8 +1,8 @@
 diff --git a/src/VintagestoryLib/Vintagestory.Server/PhysicsManager.cs b/src/VintagestoryLib/Vintagestory.Server/PhysicsManager.cs
-index 2c2605d..0f70df5 100644
+index 2c2605d..196833b 100644
 --- a/src/VintagestoryLib/Vintagestory.Server/PhysicsManager.cs
 +++ b/src/VintagestoryLib/Vintagestory.Server/PhysicsManager.cs
-@@ -157,10 +157,18 @@ public class PhysicsManager : LoadBalancedTask
+@@ -157,10 +157,20 @@ public class PhysicsManager : LoadBalancedTask
  
  	private ConcurrentDictionary<long, EntityTagPacket> entitiesTagPackets;
  
@@ -14,6 +14,8 @@ index 2c2605d..0f70df5 100644
 +	private List<AnimationPacket>[] lithosClientAnimationUpdates;
 +
 +	private List<EntityTagPacket>[] lithosClientTagUpdates;
++
++	private readonly ConcurrentQueue<Packet_BulkEntityPosition> lithosBulkPositionPacketPool = new ConcurrentQueue<Packet_BulkEntityPosition>();
 +	// Lithos end.
 +
  	private double[] positions = new double[3];
@@ -21,7 +23,7 @@ index 2c2605d..0f70df5 100644
  	private readonly EntityDespawnData outofRangeDespawnData = new EntityDespawnData
  	{
  		Reason = EnumDespawnReason.OutOfRange
-@@ -198,10 +206,15 @@ public class PhysicsManager : LoadBalancedTask
+@@ -198,10 +208,15 @@ public class PhysicsManager : LoadBalancedTask
  		entitiesDebugUpdate = new Dictionary<long, Packet_EntityAttributes>[maxPhysicsThreads];
  		entitiesPositionPackets = new Dictionary<long, Packet_EntityPosition>[maxPhysicsThreads];
  		entitiesAnimPackets = new Dictionary<long, AnimationPacket>[maxPhysicsThreads];
@@ -37,7 +39,7 @@ index 2c2605d..0f70df5 100644
  			entitiesFullUpdate[i] = new Dictionary<long, Packet_EntityAttributes>();
  		}
  		for (int j = 0; j < entitiesPartialUpdate.Length; j++)
-@@ -221,10 +234,15 @@ public class PhysicsManager : LoadBalancedTask
+@@ -221,10 +236,15 @@ public class PhysicsManager : LoadBalancedTask
  			entitiesAnimPackets[m] = new Dictionary<long, AnimationPacket>();
  		}
  		for (int n = 0; n < entitiesUpdateReusableBuffers.Length; n++)
@@ -53,7 +55,7 @@ index 2c2605d..0f70df5 100644
  		loadBalancer = new LoadBalancer(this, ServerMain.Logger);
  		loadBalancer.CreateDedicatedThreads(maxPhysicsThreads, "physicsManager", server.Serverthreads);
  		offthreadProcess = new PhysicsOffthreadTasks(this);
-@@ -781,13 +799,18 @@ public class PhysicsManager : LoadBalancedTask
+@@ -781,13 +801,18 @@ public class PhysicsManager : LoadBalancedTask
  		return result;
  	}
  
@@ -75,3 +77,95 @@ index 2c2605d..0f70df5 100644
  		{
  			list.Clear();
  			list2.Clear();
+@@ -837,26 +862,34 @@ public class PhysicsManager : LoadBalancedTask
+ 			int count = list.Count;
+ 			if (count > 8 && !client.IsSinglePlayerClient && !client.FallBackToTcp)
+ 			{
+ 				for (int i = 0; i < count; i += 8)
+ 				{
+-					Packet_EntityPosition[] array = new Packet_EntityPosition[Math.Min(8, count - i)];
+-					for (int j = 0; j < array.Length; j++)
+-					{
+-						array[j] = list[i + j];
+-					}
+-					Packet_BulkEntityPosition packet_BulkEntityPosition = new Packet_BulkEntityPosition();
+-					packet_BulkEntityPosition.SetEntityPositions(array);
+-					udpNetwork.SendPacket_Threadsafe(client, packet_BulkEntityPosition);
++					// Lithos start: Retain each queued snapshot until the UDP queue finishes with it.
++					int batchSize = Math.Min(8, count - i);
++					Packet_EntityPosition[] array = lithosRentPositionArray(list, i, batchSize);
++					Packet_BulkEntityPosition packet_BulkEntityPosition = lithosRentBulkPositionPacket(array, batchSize);
++					udpNetwork.LithosSendPooledBulkPositionPacket(client, packet_BulkEntityPosition);
++					// Lithos end.
+ 				}
+ 			}
+-			else if (count > 0)
++			// Lithos start: The single-player queue keeps the raw packet after this call returns.
++			else if (count > 0 && client.IsSinglePlayerClient)
+ 			{
+ 				Packet_BulkEntityPosition packet_BulkEntityPosition2 = new Packet_BulkEntityPosition();
+ 				packet_BulkEntityPosition2.SetEntityPositions(list.ToArray());
+ 				udpNetwork.SendPacket_Threadsafe(client, packet_BulkEntityPosition2);
+ 			}
++			// Lithos end.
++			else if (count > 0)
++			{
++				// Lithos start: TCP fallback also finishes serialization inside SendPacketBlocking.
++				Packet_EntityPosition[] array2 = lithosRentPositionArray(list, 0, count);
++				Packet_BulkEntityPosition packet_BulkEntityPosition3 = lithosRentBulkPositionPacket(array2, count);
++				udpNetwork.LithosSendPooledBulkPositionPacket(client, packet_BulkEntityPosition3);
++				// Lithos end.
++			}
+ 			if (list2.Count > 0)
+ 			{
+ 				BulkAnimationPacket message = new BulkAnimationPacket
+ 				{
+ 					Packets = list2.ToArray()
+@@ -872,10 +905,47 @@ public class PhysicsManager : LoadBalancedTask
+ 				AnimationsAndTagsChannel.SendPacket(item2, client.Player);
+ 			}
+ 		}
+ 	}
+ 
++	// Lithos start: Queued packets own their arrays until the network thread returns them.
++	private static Packet_EntityPosition[] lithosRentPositionArray(List<Packet_EntityPosition> packets, int offset, int count)
++	{
++		Packet_EntityPosition[] array = System.Buffers.ArrayPool<Packet_EntityPosition>.Shared.Rent(count);
++		for (int i = 0; i < count; i++)
++		{
++			array[i] = packets[offset + i];
++		}
++		return array;
++	}
++
++	private Packet_BulkEntityPosition lithosRentBulkPositionPacket(Packet_EntityPosition[] positions, int count)
++	{
++		if (!lithosBulkPositionPacketPool.TryDequeue(out Packet_BulkEntityPosition packet))
++		{
++			packet = new Packet_BulkEntityPosition();
++		}
++		packet.SetEntityPositions(positions, count, count);
++		return packet;
++	}
++
++	internal void LithosReturnBulkPositionPacket(Packet_UdpPacket udpPacket)
++	{
++		Packet_BulkEntityPosition packet = udpPacket.BulkPositions;
++		Packet_EntityPosition[] positions = packet.EntityPositions;
++		int positionsCount = packet.EntityPositionsCount;
++		udpPacket.BulkPositions = null;
++		packet.EntityPositions = null;
++		packet.EntityPositionsCount = 0;
++		packet.EntityPositionsLength = 0;
++		packet.size = 0;
++		Array.Clear(positions, 0, positionsCount);
++		System.Buffers.ArrayPool<Packet_EntityPosition>.Shared.Return(positions);
++		lithosBulkPositionPacketPool.Enqueue(packet);
++	}
++	// Lithos end.
++
+ 	private int PrepareEntitySpawns(Entity[] spawnsToSend, List<ConnectedClient> clientList)
+ 	{
+ 		int num = MagicNum.DefaultEntityTrackingRange * MagicNum.ServerChunkSize * MagicNum.DefaultEntityTrackingRange * MagicNum.ServerChunkSize;
+ 		double[] array = positions;
+ 		int count = clientList.Count;

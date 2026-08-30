@@ -25,6 +25,7 @@ dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark path
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark random-tick-slices --iterations 2000000 --samples 5
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark entity-partition-rebuild-vanilla --benchmark entity-partition-rebuild-reuse --iterations 2000000 --samples 5
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark entity-packet-gather-vanilla --benchmark entity-packet-gather-reuse --iterations 2000000 --samples 5
+dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark entity-position-batches-vanilla --benchmark entity-position-batches-pooled --iterations 2000000 --samples 5
 ```
 
 The suite has no external benchmark package. It measures the Release assemblies already produced by the repository build.
@@ -150,3 +151,20 @@ Patch: [entity partition reuse](../patches/VSEssentials/Systems/EntityPartitioni
 | Checksum | -1,330,102,592 | -1,330,102,592 | unchanged |
 
 Patch: [entity packet gather buffers](../patches/VintagestoryLib/Vintagestory.Server/PhysicsManager.cs.patch)
+
+### 2026-08-29: queued entity position storage
+
+- Change: pool the position arrays and bulk packet wrappers used by remote-client entity updates.
+- Fixture: cycle a 23-position UDP send split into 8-position batches, a 23-position TCP fallback send, a five-position UDP send, and a 23-position single-player send.
+- Configuration: Vintage Story API 1.22.7.0, .NET 10.0.11, Release, Windows x64, workstation GC.
+- Sampling: 2,000,000 client send passes per sample, five samples, median result.
+- Ownership: pooled storage stays attached to the queued packet until synchronous UDP or TCP serialization completes. Expired and failed sends also return it. Single-player retains fresh storage because its dummy transport queues the raw packet object.
+- Compatibility: packet order, UDP batch boundaries, count and length fields, serialized bytes, public send behavior, and single-player object lifetime are verified. The isolated construction loop trades CPU time for substantially lower allocation pressure.
+
+| Metric | Fresh storage | Pooled remote storage | Change |
+|---|---:|---:|---:|
+| Median time | 99.98 ns/send | 146.48 ns/send | 46.5% slower |
+| Allocation | 244.00 B/send | 62.00 B/send | 182.00 B/send removed |
+| Checksum | 1,262,985,376 | 1,262,985,376 | unchanged |
+
+Patches: [entity position batching](../patches/VintagestoryLib/Vintagestory.Server/PhysicsManager.cs.patch), [UDP network send path](../patches/VintagestoryLib/Vintagestory.Server.Systems/ServerUdpNetwork.cs.patch), [UDP queue lifetime](../patches/VintagestoryLib/Vintagestory.Server.Systems/ServerUdpQueue.cs.patch), and [queued packet ownership](../patches/VintagestoryLib/Vintagestory.Server.Systems/QueuedUDPPacket.cs.patch).

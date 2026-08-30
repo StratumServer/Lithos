@@ -1,0 +1,64 @@
+diff --git a/src/VintagestoryLib/Vintagestory.Server.Systems/ServerUdpQueue.cs b/src/VintagestoryLib/Vintagestory.Server.Systems/ServerUdpQueue.cs
+index 2f84679..9376fe9 100644
+--- a/src/VintagestoryLib/Vintagestory.Server.Systems/ServerUdpQueue.cs
++++ b/src/VintagestoryLib/Vintagestory.Server.Systems/ServerUdpQueue.cs
+@@ -33,10 +33,24 @@ public class ServerUdpQueue
+ 				Monitor.Pulse(this);
+ 			}
+ 		}
+ 	}
+ 
++	// Lithos start: Queue a bulk packet whose storage is owned by PhysicsManager.
++	internal void LithosQueuePooledBulkPositionPacket(ConnectedClient client, Packet_UdpPacket packet)
++	{
++		queue.Enqueue(new QueuedUDPPacket(client, packet, lithosPooledBulkPosition: true));
++		if (idle)
++		{
++			lock (this)
++			{
++				Monitor.Pulse(this);
++			}
++		}
++	}
++	// Lithos end.
++
+ 	internal void DedicatedThreadLoop()
+ 	{
+ 		while (!server.stopped && server.exitState.Mode == EnumExitMode.None)
+ 		{
+ 			if (queue.IsEmpty)
+@@ -66,10 +80,34 @@ public class ServerUdpQueue
+ 					}
+ 					catch (Exception e)
+ 					{
+ 						ServerMain.Logger.Error(e);
+ 					}
++					// Lithos start: Serialization is complete before SendPacketBlocking returns.
++					finally
++					{
++						lithosReturnBulkPositionPacket(result);
++					}
++					// Lithos end.
+ 				}
++				// Lithos start: Expired packets no longer need their queued storage.
++				else
++				{
++					lithosReturnBulkPositionPacket(result);
++				}
++				// Lithos end.
+ 			}
+ 		}
+ 	}
++
++	// Lithos start: Return only packets created by the internal pooled send path.
++	private void lithosReturnBulkPositionPacket(QueuedUDPPacket queuedPacket)
++	{
++		if (!queuedPacket.lithosPooledBulkPosition)
++		{
++			return;
++		}
++		queuedPacket.lithosPooledBulkPosition = false;
++		network.physicsManager.LithosReturnBulkPositionPacket(queuedPacket.packet);
++	}
++	// Lithos end.
+ }

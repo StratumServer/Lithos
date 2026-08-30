@@ -1,0 +1,27 @@
+diff --git a/src/VintagestoryLib/Vintagestory.Server.Systems/ServerUdpNetwork.cs b/src/VintagestoryLib/Vintagestory.Server.Systems/ServerUdpNetwork.cs
+index e42549d..7b043f5 100644
+--- a/src/VintagestoryLib/Vintagestory.Server.Systems/ServerUdpNetwork.cs
++++ b/src/VintagestoryLib/Vintagestory.Server.Systems/ServerUdpNetwork.cs
+@@ -311,10 +311,22 @@ public class ServerUdpNetwork : ServerSystem
+ 			BulkPositions = contentPacket
+ 		};
+ 		ImmediateUdpQueue.QueuePacket(client, packet);
+ 	}
+ 
++	// Lithos start: Preserve pooled storage until the network queue finishes sending.
++	internal void LithosSendPooledBulkPositionPacket(ConnectedClient client, Packet_BulkEntityPosition contentPacket)
++	{
++		Packet_UdpPacket packet = new Packet_UdpPacket
++		{
++			Id = 4,
++			BulkPositions = contentPacket
++		};
++		ImmediateUdpQueue.LithosQueuePooledBulkPositionPacket(client, packet);
++	}
++	// Lithos end.
++
+ 	public void SendPacket_Threadsafe(ConnectedClient client, Packet_CustomPacket prePacked)
+ 	{
+ 		Packet_UdpPacket packet = new Packet_UdpPacket
+ 		{
+ 			Id = 6,

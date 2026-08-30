@@ -22,7 +22,9 @@ internal static class Program
         new EntityPartitionBenchmark(false),
         new EntityPartitionBenchmark(true),
         new EntityPacketGatherBenchmark(false),
-        new EntityPacketGatherBenchmark(true)
+        new EntityPacketGatherBenchmark(true),
+        new EntityPositionBatchBenchmark(false),
+        new EntityPositionBatchBenchmark(true)
     ];
 
     public static int Main(string[] args)
