@@ -7,4 +7,8 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RootNamespace>Lithos.Tool</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../shared/NativeLibrarySearchPath.cs" Link="NativeLibrarySearchPath.cs" />
+  </ItemGroup>
 </Project>

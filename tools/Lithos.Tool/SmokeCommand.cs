@@ -6,6 +6,7 @@ namespace Lithos.Tool;
 
 internal sealed class SmokeCommand(RepositoryPaths paths)
 {
+    private const int FailureOutputLineCount = 80;
     private static readonly TimeSpan StabilityPeriod = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan GracefulStopTimeout = TimeSpan.FromSeconds(30);
     private static readonly Regex RunPhasePattern = new(
@@ -95,6 +96,7 @@ internal sealed class SmokeCommand(RepositoryPaths paths)
         var lastPhase = "starting";
         DateTimeOffset? reachedRunGameAt = null;
         string? fatalLine = null;
+        var recentOutput = new Queue<string>();
 
         void RecordOutput(string stream, string? line)
         {
@@ -102,7 +104,13 @@ internal sealed class SmokeCommand(RepositoryPaths paths)
 
             lock (stateLock)
             {
-                log.WriteLine(stream == "stdout" ? line : $"[stderr] {line}");
+                var recordedLine = stream == "stdout" ? line : $"[stderr] {line}";
+                log.WriteLine(recordedLine);
+                recentOutput.Enqueue(recordedLine);
+                if (recentOutput.Count > FailureOutputLineCount)
+                {
+                    recentOutput.Dequeue();
+                }
                 lastOutput = DateTimeOffset.UtcNow;
 
                 var match = RunPhasePattern.Match(line);
@@ -123,6 +131,7 @@ internal sealed class SmokeCommand(RepositoryPaths paths)
 
                 if (line.Contains("[Server Fatal]", StringComparison.OrdinalIgnoreCase)
                     || line.Contains("[Fatal]", StringComparison.OrdinalIgnoreCase)
+                    || line.Contains("Critical error occurred", StringComparison.OrdinalIgnoreCase)
                     || line.Contains("Unhandled exception", StringComparison.OrdinalIgnoreCase))
                 {
                     fatalLine ??= line;
@@ -190,11 +199,20 @@ internal sealed class SmokeCommand(RepositoryPaths paths)
         finally
         {
             await ServerRuntime.StopAsync(process, passed ? GracefulStopTimeout : TimeSpan.FromSeconds(5));
+            process.WaitForExit();
         }
 
         if (!passed)
         {
-            throw new InvalidOperationException($"{failure} Process log: {logFile}");
+            string[] output;
+            lock (stateLock)
+            {
+                output = recentOutput.ToArray();
+            }
+            var details = output.Length == 0
+                ? string.Empty
+                : $"{Environment.NewLine}Recent server output:{Environment.NewLine}{string.Join(Environment.NewLine, output)}";
+            throw new InvalidOperationException($"{failure} Process log: {logFile}{details}");
         }
 
         if (process.ExitCode != 0)

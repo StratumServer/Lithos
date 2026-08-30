@@ -15,6 +15,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../../shared/NativeLibrarySearchPath.cs" Link="NativeLibrarySearchPath.cs" />
     <EmbeddedResource Include="../../forks.json" LogicalName="Lithos.forks.json" />
   </ItemGroup>
 

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Lithos.Runtime;
 
 namespace Lithos.Server;
 
@@ -62,6 +63,7 @@ internal static class Program
         {
             process.StartInfo.ArgumentList.Add(argument);
         }
+        NativeLibrarySearchPath.Apply(process.StartInfo, runtime);
 
         if (!process.Start())
         {

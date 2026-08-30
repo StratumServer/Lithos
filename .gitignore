@@ -4,6 +4,7 @@
 
 # Build and test output
 /artifacts/
+/release-full/
 **/bin/
 **/obj/
 **/*.lscache

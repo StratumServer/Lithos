@@ -1,12 +1,20 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using Lithos.Runtime;
 
 namespace Lithos.Tool;
 
 internal sealed class ServerRuntime(RepositoryPaths paths)
 {
     private const string Configuration = "Release";
+    private static readonly string[] PatchedRootAssemblies =
+    [
+        "VintagestoryServer",
+        "VintagestoryLib",
+        "VintagestoryAPI",
+        "cairo-sharp"
+    ];
 
     public void RequireBootstrap(string command)
     {
@@ -40,7 +48,7 @@ internal sealed class ServerRuntime(RepositoryPaths paths)
         paths.DeleteGeneratedDirectory(runtime);
         Console.WriteLine($"Staging {purpose} runtime...");
         FileSystem.CopyDirectory(paths.Vanilla, runtime);
-        FileSystem.CopyDirectory(serverOutput, runtime);
+        OverlayBuiltServerFiles(serverOutput, runtime);
         OverlayBuiltMods(runtime);
     }
 
@@ -72,6 +80,7 @@ internal sealed class ServerRuntime(RepositoryPaths paths)
         process.StartInfo.ArgumentList.Add(address.ToString());
         process.StartInfo.ArgumentList.Add("--port");
         process.StartInfo.ArgumentList.Add(port.ToString());
+        NativeLibrarySearchPath.Apply(process.StartInfo, runtime);
         return process;
     }
 
@@ -118,6 +127,25 @@ internal sealed class ServerRuntime(RepositoryPaths paths)
         }
 
         await process.WaitForExitAsync();
+    }
+
+    private static void OverlayBuiltServerFiles(string serverOutput, string runtime)
+    {
+        foreach (var assemblyName in PatchedRootAssemblies)
+        {
+            var source = Path.Combine(serverOutput, $"{assemblyName}.dll");
+            if (!File.Exists(source))
+            {
+                throw new InvalidOperationException($"Server build output is missing: {source}");
+            }
+
+            File.Copy(source, Path.Combine(runtime, Path.GetFileName(source)), true);
+            var symbols = Path.ChangeExtension(source, ".pdb");
+            if (File.Exists(symbols))
+            {
+                File.Copy(symbols, Path.Combine(runtime, Path.GetFileName(symbols)), true);
+            }
+        }
     }
 
     private void OverlayBuiltMods(string runtime)
