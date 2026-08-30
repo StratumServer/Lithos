@@ -22,6 +22,7 @@ dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark craf
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark registry-code-parts --iterations 2000000 --samples 5
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark network-packet-broadcast --iterations 100000 --samples 5
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark pathfinding-candidates --iterations 2000000 --samples 5
+dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark pathnode-open-set-vanilla --benchmark pathnode-open-set-indexed --iterations 2000000 --samples 5
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark random-tick-slices --iterations 2000000 --samples 5
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark entity-partition-rebuild-vanilla --benchmark entity-partition-rebuild-reuse --iterations 2000000 --samples 5
 dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --benchmark entity-packet-gather-vanilla --benchmark entity-packet-gather-reuse --iterations 2000000 --samples 5
@@ -99,6 +100,22 @@ Patch: [packet broadcast recipient filtering](../patches/VintagestoryLib/Vintage
 | Checksum | 1,666,522,256 | 1,666,522,256 | unchanged |
 
 Patch: [A* candidate allocation](../patches/VSEssentials/Entity/Pathfinding/Astar/AStar.cs.patch)
+
+### 2026-08-29: A* open-set coordinate lookup
+
+- Change: retain a private coordinate index beside `PathNodeSet`'s existing priority buckets.
+- Fixture: probe a 512-node frontier with an even mix of present and absent coordinates distributed across all four buckets.
+- Configuration: Vintage Story API 1.22.7.0, .NET 10.0.11, Release, Windows x64, workstation GC.
+- Sampling: 2,000,000 candidate lookups per sample, five samples, median result.
+- Compatibility: duplicate handling, dimension-independent coordinate equality, enumeration order, explicit removal, nearest-node priority and tie order, and clear behavior are compared with the original implementation. Public members and bucket ownership remain unchanged.
+
+| Metric | Linear buckets | Coordinate index | Change |
+|---|---:|---:|---:|
+| Median time | 94.21 ns/lookup | 12.09 ns/lookup | 87.2% faster |
+| Allocation | 0 B/lookup | 0 B/lookup | unchanged |
+| Checksum | -1,303,597,382 | -1,303,597,382 | unchanged |
+
+Patch: [A* open-set coordinate lookup](../patches/VSEssentials/Entity/Pathfinding/Astar/PathNodeSet.cs.patch)
 
 ### 2026-08-29: random tick slices
 

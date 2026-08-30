@@ -1,0 +1,101 @@
+diff --git a/src/VSEssentials/Entity/Pathfinding/Astar/PathNodeSet.cs b/src/VSEssentials/Entity/Pathfinding/Astar/PathNodeSet.cs
+index e2e9462..200616b 100644
+--- a/src/VSEssentials/Entity/Pathfinding/Astar/PathNodeSet.cs
++++ b/src/VSEssentials/Entity/Pathfinding/Astar/PathNodeSet.cs
+@@ -13,20 +13,25 @@ namespace Vintagestory.Essentials
+         int arraySize = 16;
+         PathNode[][] buckets = new PathNode[4][];
+         int[] bucketCount = new int[4];
+         int size = 0;
+ 
++        // Lithos: Index coordinates without changing the priority buckets.
++        private readonly Dictionary<(int X, int Y, int Z), PathNode> lithosNodeIndex = new Dictionary<(int X, int Y, int Z), PathNode>();
++
+         public int Count {
+             get {
+                 return size;
+             }
+         }
+ 
+         public void Clear()
+         {
+             for (int i = 0; i < 4; i++) bucketCount[i] = 0;
+             size = 0;
++            // Lithos: Retain index capacity between path searches.
++            lithosNodeIndex.Clear();
+         }
+ 
+         public PathNodeSet()
+         {
+             for (int i = 0; i < 4; i++) buckets[i] = new PathNode[arraySize];
+@@ -39,17 +44,15 @@ namespace Vintagestory.Essentials
+         {
+             int bucket = (value.Z % 2) * 2 + (value.X % 2);
+             bucket = (bucket + 4) % 4;    // we cannot assume X and Z are both positive, could be near map edge
+             PathNode[] set = buckets[bucket];
+ 
+-            // fast search, start from the most recently added
++            // Lithos: Replace the bucket scan with an indexed duplicate check.
++            if (!lithosNodeIndex.TryAdd((value.X, value.Y, value.Z), value)) return false;
++
+             int size = bucketCount[bucket];
+             int i = size;
+-            while (--i >= 0)
+-            {
+-                if (value.Equals(set[i])) return false;
+-            }
+ 
+             // now actually add the value
+             if (size >= arraySize)
+             {
+                 ExpandArrays();
+@@ -99,10 +102,12 @@ namespace Vintagestory.Essentials
+             }
+ 
+             // now actually remove the value - easy because it is always the last one in its bucket
+             --bucketCount[bucketToRemoveFrom];
+             this.size--;
++            // Lithos: Keep coordinate membership in step with the buckets.
++            lithosNodeIndex.Remove((nearestNode.X, nearestNode.Y, nearestNode.Z));
+             return nearestNode;
+         }
+ 
+ 
+         public void Remove(PathNode value)
+@@ -120,31 +125,23 @@ namespace Vintagestory.Essentials
+                 {
+                     // now actually remove the value
+                     size = --bucketCount[bucket];
+                     while (i < size) set[i] = set[++i];
+                     this.size--;
++                    // Lithos: Remove the matching coordinate from the index.
++                    lithosNodeIndex.Remove((value.X, value.Y, value.Z));
+ 
+                     break;
+                 }
+             }
+         }
+ 
+         public PathNode TryFindValue(PathNode value)
+         {
+-            int bucket = (value.Z % 2) * 2 + (value.X % 2);
+-            bucket = (bucket + 4) % 4;    // we cannot assume X and Z are both positive, could be near map edge
+-            PathNode[] set = buckets[bucket];
+-
+-            // fast search, start from the most recently added
+-            int size = bucketCount[bucket];
+-            int i = size;
+-            while (--i >= 0)
+-            {
+-                if (value.Equals(set[i])) return set[i];
+-            }
+-
+-            return null;
++            // Lithos: Resolve open-set membership by coordinate.
++            lithosNodeIndex.TryGetValue((value.X, value.Y, value.Z), out PathNode result);
++            return result;
+         }
+ 
+ 
+         /// <summary>
+         /// Expand the array in all buckets - not much point in having buckets of different sizes, this class doesn't take a huge amount of memory anyhow

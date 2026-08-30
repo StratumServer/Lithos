@@ -18,6 +18,8 @@ internal static class Program
         new RegistryCodePartBenchmark(),
         new PacketBroadcastBenchmark(),
         new PathfindingCandidateBenchmark(),
+        new PathNodeSetLookupBenchmark(false),
+        new PathNodeSetLookupBenchmark(true),
         new RandomTickSliceBenchmark(),
         new EntityPartitionBenchmark(false),
         new EntityPartitionBenchmark(true),
