@@ -1,3 +1,5 @@
+using System.Net;
+
 namespace Lithos.Tool;
 
 internal static class Program
@@ -29,6 +31,9 @@ internal static class Program
                     return 0;
                 case "smoke":
                     await new SmokeCommand(paths).RunAsync(ParseSmoke(args[1..]));
+                    return 0;
+                case "server":
+                    await new ServerCommand(paths).RunAsync(ParseServer(args[1..]));
                     return 0;
                 default:
                     throw new ArgumentException($"Unknown command: {args[0]}");
@@ -126,6 +131,47 @@ internal static class Program
         return new SmokeOptions(dataPath, port, patienceSeconds, build, keepData);
     }
 
+    private static ServerOptions ParseServer(string[] args)
+    {
+        string? dataPath = null;
+        var address = IPAddress.Loopback.ToString();
+        var port = 42420;
+        var build = true;
+
+        for (var index = 0; index < args.Length; index++)
+        {
+            switch (args[index])
+            {
+                case "--data-path":
+                    dataPath = ReadValue(args, ref index);
+                    break;
+                case "--ip":
+                    address = ReadValue(args, ref index);
+                    break;
+                case "--port":
+                    port = ReadInteger(args, ref index);
+                    break;
+                case "--no-build":
+                    build = false;
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown server option: {args[index]}");
+            }
+        }
+
+        if (!IPAddress.TryParse(address, out _))
+        {
+            throw new ArgumentException($"--ip requires an IP address, but received: {address}");
+        }
+
+        if (port is < 0 or > 65535)
+        {
+            throw new ArgumentOutOfRangeException(nameof(port), "Port must be between 0 and 65535.");
+        }
+
+        return new ServerOptions(dataPath, address, port, build);
+    }
+
     private static string ReadValue(string[] args, ref int index)
     {
         index++;
@@ -178,6 +224,7 @@ internal static class Program
         Console.WriteLine("  capture     Store src/ changes in patches/ and overlay/");
         Console.WriteLine("  doctor      Validate prerequisites and report repository state");
         Console.WriteLine("  smoke       Build and boot a temporary headless server");
+        Console.WriteLine("  server      Build and run a persistent playtest server");
         Console.WriteLine();
         Console.WriteLine("Bootstrap options:");
         Console.WriteLine("  --server-archive PATH   Reuse an official server zip or tarball");
@@ -191,5 +238,11 @@ internal static class Program
         Console.WriteLine("  --patience SEC    Fail after this many seconds without server output");
         Console.WriteLine("  --no-build        Reuse existing Release build output");
         Console.WriteLine("  --keep-data       Preserve the generated data directory after a successful run");
+        Console.WriteLine();
+        Console.WriteLine("Server options:");
+        Console.WriteLine("  --data-path DIR   Preserve server data in this directory");
+        Console.WriteLine("  --ip ADDRESS      Bind to this address instead of 127.0.0.1");
+        Console.WriteLine("  --port NUMBER     Bind to this port, or use 0 for an ephemeral port");
+        Console.WriteLine("  --no-build        Reuse existing Release build output");
     }
 }

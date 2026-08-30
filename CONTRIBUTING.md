@@ -134,6 +134,14 @@ dotnet run --project tools/Lithos.Tool -- smoke --no-build
 
 The sequence above builds and then boots a temporary loopback-only server, waits for the `RunGame` phase, and requests a clean shutdown. Generated data is removed after success and preserved after failure.
 
+For a server that stays online while a client joins and tests in-game behavior, run:
+
+```text
+dotnet run --project tools/Lithos.Tool -- server
+```
+
+The playtest server sets to `127.0.0.1:42420`, preserves worlds and configuration under `.lithos/server/data`, and shuts down cleanly when you press Ctrl+C. Use `--no-build` to reuse current Release output, `--port` or `--ip` to change the listener, and `--data-path` to use another persistent data directory. Binding a non-loopback address makes the test server reachable from that network.
+
 Compilation and smoke testing are only the first gates. Test the vanilla behavior that the change touches. Depending on the subsystem, this can include existing world load, save and reload, player connection, chunk lifecycle, networking, entity behavior, or world generation determinism.
 
 Performance changes need a repeatable before and after measurement. Record the game version, build configuration, world or fixture, mods, player or bot count, duration, metric, and both results. Do not keep an invasive change based only on a theoretical gain.

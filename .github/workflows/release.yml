@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v7
+
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Validate release versions
+        id: release
+        shell: pwsh
+        run: |
+          $versionDocument = [xml](Get-Content version.props -Raw)
+          $version = [string]$versionDocument.Project.PropertyGroup.LithosVersion
+          $gameVersion = [string](Get-Content forks.json -Raw | ConvertFrom-Json).vintageStoryVersion
+          if ($env:GITHUB_REF_NAME -ne "v$version") {
+              throw "Tag '$env:GITHUB_REF_NAME' does not match version.props '$version'."
+          }
+          "title=Lithos $version for Vintage Story $gameVersion" | Out-File -Append $env:GITHUB_OUTPUT
+          "prerelease=$($version.Contains('-').ToString().ToLowerInvariant())" | Out-File -Append $env:GITHUB_OUTPUT
+
+      - name: Reconstruct source tree
+        run: dotnet run --project tools/Lithos.Tool -c Release -- bootstrap
+
+      - name: Build release
+        run: dotnet build Lithos.slnx -c Release -p:ContinuousIntegrationBuild=true
+
+      - name: Verify benchmarks
+        run: dotnet run --project benchmarks/Lithos.Benchmarks -c Release -- --verify
+
+      - name: Smoke test server
+        run: dotnet run --project tools/Lithos.Tool -c Release --no-build -- smoke --no-build
+
+      - name: Package launchers
+        shell: pwsh
+        run: ./scripts/pack-release.ps1 -Rids linux-x64,win-x64 -OutDir release-out -Version $env:GITHUB_REF_NAME -NoBuild
+
+      - name: Create GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TITLE: ${{ steps.release.outputs.title }}
+          IS_PRERELEASE: ${{ steps.release.outputs.prerelease }}
+        run: |
+          $files = Get-ChildItem release-out/*.zip | ForEach-Object { $_.FullName }
+          if ($files.Count -ne 2) {
+              throw "Expected two release archives, found $($files.Count)."
+          }
+          $arguments = @('release', 'create', $env:GITHUB_REF_NAME)
+          $arguments += $files
+          $arguments += @('--verify-tag', '--title', $env:RELEASE_TITLE, '--generate-notes')
+          if ($env:IS_PRERELEASE -eq 'true') {
+              $arguments += '--prerelease'
+          }
+          & gh @arguments
+          if ($LASTEXITCODE -ne 0) { throw 'GitHub release creation failed.' }

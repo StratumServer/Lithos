@@ -2,6 +2,9 @@
   <Folder Name="/Build/">
     <Project Path="tools/Lithos.Tool/Lithos.Tool.csproj" />
   </Folder>
+  <Folder Name="/Lithos/">
+    <Project Path="launcher/Lithos.Server/Lithos.Server.csproj" />
+  </Folder>
   <Folder Name="/Vanilla/">
     <Project Path="src/Cairo/Cairo.csproj" />
     <Project Path="src/VintagestoryApi/VintagestoryAPI.csproj" />
