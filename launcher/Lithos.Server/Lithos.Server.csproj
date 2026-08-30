@@ -21,11 +21,18 @@
 
   <ItemGroup Condition="'$(EmbedPatchedFiles)' == 'true'">
     <EmbeddedResource Include="../../src/VintagestoryServer/bin/$(Configuration)/$(FrameworkVersion)/VintagestoryServer.dll" LogicalName="Lithos.PatchedRoot.VintagestoryServer.dll" />
+    <EmbeddedResource Include="../../src/VintagestoryServer/bin/$(Configuration)/$(FrameworkVersion)/VintagestoryServer.pdb" LogicalName="Lithos.PatchedRoot.VintagestoryServer.pdb" />
     <EmbeddedResource Include="../../src/VintagestoryLib/bin/$(Configuration)/$(FrameworkVersion)/VintagestoryLib.dll" LogicalName="Lithos.PatchedRoot.VintagestoryLib.dll" />
+    <EmbeddedResource Include="../../src/VintagestoryLib/bin/$(Configuration)/$(FrameworkVersion)/VintagestoryLib.pdb" LogicalName="Lithos.PatchedRoot.VintagestoryLib.pdb" />
     <EmbeddedResource Include="../../src/bin/$(Configuration)/$(FrameworkVersion)/VintagestoryAPI.dll" LogicalName="Lithos.PatchedRoot.VintagestoryAPI.dll" />
+    <EmbeddedResource Include="../../src/bin/$(Configuration)/$(FrameworkVersion)/VintagestoryAPI.pdb" LogicalName="Lithos.PatchedRoot.VintagestoryAPI.pdb" />
     <EmbeddedResource Include="../../src/bin/$(Configuration)/$(FrameworkVersion)/cairo-sharp.dll" LogicalName="Lithos.PatchedRoot.cairo-sharp.dll" />
+    <EmbeddedResource Include="../../src/bin/$(Configuration)/$(FrameworkVersion)/cairo-sharp.pdb" LogicalName="Lithos.PatchedRoot.cairo-sharp.pdb" />
     <EmbeddedResource Include="../../src/bin/$(Configuration)/$(FrameworkVersion)/VSCreativeMod.dll" LogicalName="Lithos.PatchedMods.VSCreativeMod.dll" />
+    <EmbeddedResource Include="../../src/bin/$(Configuration)/$(FrameworkVersion)/VSCreativeMod.pdb" LogicalName="Lithos.PatchedMods.VSCreativeMod.pdb" />
     <EmbeddedResource Include="../../src/bin/$(Configuration)/$(FrameworkVersion)/VSEssentials.dll" LogicalName="Lithos.PatchedMods.VSEssentials.dll" />
+    <EmbeddedResource Include="../../src/bin/$(Configuration)/$(FrameworkVersion)/VSEssentials.pdb" LogicalName="Lithos.PatchedMods.VSEssentials.pdb" />
     <EmbeddedResource Include="../../src/bin/$(Configuration)/$(FrameworkVersion)/VSSurvivalMod.dll" LogicalName="Lithos.PatchedMods.VSSurvivalMod.dll" />
+    <EmbeddedResource Include="../../src/bin/$(Configuration)/$(FrameworkVersion)/VSSurvivalMod.pdb" LogicalName="Lithos.PatchedMods.VSSurvivalMod.pdb" />
   </ItemGroup>
 </Project>
