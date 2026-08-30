@@ -12,8 +12,8 @@ internal sealed class VanillaRuntime(ReleaseInfo release)
 
     public async Task<string> PrepareAsync(bool refresh)
     {
-        var workspace = Path.Combine(AppContext.BaseDirectory, ".lithos");
-        var runtime = Path.Combine(workspace, "runtime");
+        var runtime = AppContext.BaseDirectory;
+        var workspace = Path.Combine(runtime, ".lithos");
         if (!refresh && IsCurrent(runtime)) return runtime;
 
         Directory.CreateDirectory(workspace);
@@ -109,7 +109,6 @@ internal sealed class VanillaRuntime(ReleaseInfo release)
     private async Task ExtractRuntimeAsync(string archive, string runtime, string workspace)
     {
         var extraction = Path.Combine(workspace, $"extract-{Guid.NewGuid():N}");
-        var prepared = Path.Combine(workspace, $"runtime-{Guid.NewGuid():N}");
         Directory.CreateDirectory(extraction);
         try
         {
@@ -119,16 +118,18 @@ internal sealed class VanillaRuntime(ReleaseInfo release)
                 .EnumerateFiles(extraction, "VintagestoryServer.dll", SearchOption.AllDirectories)
                 .FirstOrDefault(path => Directory.Exists(Path.Combine(Path.GetDirectoryName(path)!, "assets")))
                 ?? throw new InvalidDataException("The official server archive does not contain a complete server install.");
-            CopyDirectory(Path.GetDirectoryName(serverAssembly)!, prepared);
-            File.WriteAllText(Path.Combine(prepared, ".vanilla-version"), release.VintageStoryVersion);
+            var marker = Path.Combine(runtime, ".vanilla-version");
+            if (File.Exists(marker)) File.Delete(marker);
 
-            if (Directory.Exists(runtime)) Directory.Delete(runtime, recursive: true);
-            Directory.Move(prepared, runtime);
+            var assets = Path.Combine(runtime, "assets");
+            if (Directory.Exists(assets)) Directory.Delete(assets, recursive: true);
+
+            CopyDirectory(Path.GetDirectoryName(serverAssembly)!, runtime);
+            File.WriteAllText(marker, release.VintageStoryVersion);
         }
         finally
         {
             if (Directory.Exists(extraction)) Directory.Delete(extraction, recursive: true);
-            if (Directory.Exists(prepared)) Directory.Delete(prepared, recursive: true);
         }
     }
 
