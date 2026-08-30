@@ -63,9 +63,9 @@ internal sealed class RepositoryManifest
                 throw new InvalidDataException($"Upstream URL must use HTTPS: {fork.Url}");
             }
 
-            if (fork.Ref.Length < 7 || fork.Ref.Any(character => !Uri.IsHexDigit(character)))
+            if (fork.Ref.Length != 40 || fork.Ref.Any(character => !Uri.IsHexDigit(character)))
             {
-                throw new InvalidDataException($"Upstream ref must be a commit hash: {fork.Name} {fork.Ref}");
+                throw new InvalidDataException($"Upstream ref must be a full commit hash: {fork.Name} {fork.Ref}");
             }
         }
     }
