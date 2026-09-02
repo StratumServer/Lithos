@@ -34,7 +34,7 @@ Lithos currently targets Vintage Story 1.22.7 and is in active development.
 - [Releases](https://github.com/StratumServer/Lithos/releases)
 - [Issue tracker](https://github.com/StratumServer/Lithos/issues)
 - [Discord](https://discord.gg/pd24fawhsD)
-- [OpenCollective](https://opencollective.com/stratum)
+- [Support Me](https://ko-fi.com/imtsubaki)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 - [License](LICENSE)
