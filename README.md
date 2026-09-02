@@ -1,10 +1,10 @@
 # Lithos
 
-[![Release](https://img.shields.io/github/v/release/StratumServer/Lithos?display_name=tag&sort=semver&logo=github&label=release)](https://github.com/StratumServer/Lithos/releases)
+[![Release](https://img.shields.io/github/v/release/trevorftp/Lithos?display_name=tag&sort=semver&logo=github&label=release)](https://github.com/trevorftp/Lithos/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Discord](https://img.shields.io/badge/chat-on%20discord-5865F2?logo=discord&logoColor=white)](https://discord.gg/pd24fawhsD)
-[![Stars](https://img.shields.io/github/stars/StratumServer/Lithos?logo=github&style=flat)](https://github.com/StratumServer/Lithos/stargazers)
-[![Support on OpenCollective](https://img.shields.io/badge/Support-OpenCollective-7FADF2?logo=opencollective&logoColor=white)](https://opencollective.com/stratum)
+[![Stars](https://img.shields.io/github/stars/tevorftp/Lithos?logo=github&style=flat)](https://github.com/trevorftp/Lithos/stargazers)
+[![Support Me](https://img.shields.io/badge/Support-imtsubaki-7FADF2?logo=kofi)](https://ko-fi.com/imtsubaki)
 
 Lithos is a compatibility-first, high-performance server-side fork of [Vintage Story](https://www.vintagestory.at).
 
